@@ -54,7 +54,7 @@ export default async function ColumnsPage() {
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+      <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <h1 className="text-base font-bold text-white">칼럼</h1>
       </header>
 

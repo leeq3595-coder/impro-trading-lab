@@ -143,7 +143,7 @@ export default async function Home() {
     <main className="min-h-screen bg-[#05070d] pb-24">
       {/* 헤더 — 모바일 사파리에서 sticky가 배너 위로 겹쳐 보이는 문제가 있어서
           fixed로 바꾸고, 아래 콘텐츠 영역에 그만큼 여백(pt)을 줬어요. */}
-      <header className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+      <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] flex items-center justify-between border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#38bdf8] to-[#3b82f6] text-sm font-bold text-[#04101f]">
             임

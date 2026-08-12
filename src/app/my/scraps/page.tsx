@@ -36,7 +36,7 @@ export default async function MyScrapsPage() {
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+      <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <Link href="/my" className="text-sm text-[#93a0b8]">
           ← 마이페이지
         </Link>

@@ -65,7 +65,7 @@ export default async function ColumnDetailPage({
       <main className="min-h-screen bg-[#05070d] pb-24">
         <AutoGate message="VIP 칼럼은 회원만 볼 수 있어요. 간편가입하고 바로 확인해보세요." />
         {!isLanding && (
-          <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+          <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
             <Link href="/columns" className="text-sm text-[#93a0b8]">
               ← 칼럼
             </Link>
@@ -98,7 +98,7 @@ export default async function ColumnDetailPage({
     return (
       <main className="min-h-screen bg-[#05070d] pb-24">
         {!isLanding && (
-          <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+          <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
             <Link href="/columns" className="text-sm text-[#93a0b8]">
               ← 칼럼
             </Link>
@@ -218,7 +218,7 @@ export default async function ColumnDetailPage({
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+      <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <Link href="/columns" className="text-sm text-[#93a0b8]">
           ← 칼럼
         </Link>

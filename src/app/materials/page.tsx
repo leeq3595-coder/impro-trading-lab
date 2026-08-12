@@ -25,7 +25,7 @@ export default async function MaterialsPage() {
     return (
       <main className="min-h-screen bg-[#05070d] pb-24">
         <AutoGate message="자료실은 회원만 볼 수 있어요. 간편가입하고 무료 자료부터 확인해보세요." />
-        <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+        <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
           <h1 className="text-base font-bold text-white">자료실</h1>
         </header>
         <div className="mx-auto max-w-md px-4 py-16 text-center">
@@ -59,7 +59,7 @@ export default async function MaterialsPage() {
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+      <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <h1 className="text-base font-bold text-white">자료실</h1>
       </header>
 

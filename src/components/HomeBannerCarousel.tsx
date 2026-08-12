@@ -12,8 +12,12 @@ type Slide = {
   ctaClass: string;
   cardClass: string;
   url: string;
-  proofImage?: string;
+  sideImage?: string;
+  sideImageClass?: string;
 };
+
+const DEFAULT_SIDE_IMAGE_CLASS =
+  "absolute right-4 top-4 w-24 rounded-lg shadow-lg shadow-black/40 sm:w-28";
 
 const AUTOPLAY_MS = 4000;
 
@@ -60,7 +64,7 @@ export function HomeBannerCarousel({ urls }: { urls: Record<string, string> }) {
       cardClass:
         "from-[#0e2318] to-[#123420] border-[rgba(74,222,128,0.25)]",
       url: urls.banner2_prop || "/signup",
-      proofImage: "/prop-proof.png",
+      sideImage: "/prop-proof.png",
     },
     {
       key: "banner3_youtube",
@@ -79,6 +83,11 @@ export function HomeBannerCarousel({ urls }: { urls: Record<string, string> }) {
       cardClass:
         "from-[#2a1218] to-[#3a1620] border-[rgba(248,113,113,0.25)]",
       url: urls.banner3_youtube || "/",
+      // 유튜브 썸네일은 가로로 긴 이미지라, 오른쪽 빈 공간에 세로 중앙 정렬로
+      // 2번 배너보다 조금 더 크게 넣어서 왼쪽 텍스트와 균형을 맞췄어요.
+      sideImage: "/youtube-thumb.png",
+      sideImageClass:
+        "absolute right-3 top-1/2 w-32 -translate-y-1/2 rounded-lg shadow-lg shadow-black/40 sm:w-40",
     },
   ];
 
@@ -128,15 +137,15 @@ export function HomeBannerCarousel({ urls }: { urls: Record<string, string> }) {
             rel="noopener noreferrer"
             className={`relative block w-full shrink-0 snap-center overflow-hidden rounded-2xl border bg-gradient-to-br p-5 ${s.cardClass}`}
           >
-            {s.proofImage && (
+            {s.sideImage && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={s.proofImage}
-                alt="실제 출금 내역"
-                className="absolute right-4 top-4 w-24 rounded-lg shadow-lg shadow-black/40 sm:w-28"
+                src={s.sideImage}
+                alt=""
+                className={s.sideImageClass || DEFAULT_SIDE_IMAGE_CLASS}
               />
             )}
-            <div className={s.proofImage ? "max-w-[62%]" : ""}>
+            <div className={s.sideImage ? "max-w-[62%]" : ""}>
               <div
                 className={`mb-2 inline-block rounded-full px-2 py-1 text-[11px] font-bold ${s.tagClass}`}
               >
