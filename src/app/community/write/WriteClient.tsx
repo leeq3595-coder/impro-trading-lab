@@ -100,13 +100,13 @@ export default function WriteClient() {
                   onUploaded={(url) => setScreenshotUrl(url)}
                 />
               </div>
-              <ContentEditor
+              <textarea
                 name="content"
                 value={profitContent}
-                onChange={setProfitContent}
+                onChange={(e) => setProfitContent(e.target.value)}
                 placeholder="한줄 소감 (선택)"
                 rows={3}
-                folder="community/body"
+                className="rounded-xl border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
               />
             </>
           ) : (

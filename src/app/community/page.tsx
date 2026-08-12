@@ -11,6 +11,7 @@ type PostRow = {
   post_type: "profit_proof" | "strategy_share";
   author_id: string;
   content: string | null;
+  screenshot_url: string | null;
   profit_rate: number | null;
   likes_count: number;
   comments_count: number;
@@ -37,7 +38,7 @@ export default async function CommunityPage() {
   const { data: profitRows } = await supabase
     .from("community_posts")
     .select(
-      "id,post_type,author_id,content,profit_rate,likes_count,comments_count,created_at"
+      "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,comments_count,created_at"
     )
     .eq("post_type", "profit_proof")
     .order("created_at", { ascending: false })
@@ -48,7 +49,7 @@ export default async function CommunityPage() {
     const { data } = await supabase
       .from("community_posts")
       .select(
-        "id,post_type,author_id,content,profit_rate,likes_count,comments_count,created_at"
+        "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,comments_count,created_at"
       )
       .eq("post_type", "strategy_share")
       .order("created_at", { ascending: false })
@@ -77,6 +78,7 @@ export default async function CommunityPage() {
       post_type: p.post_type,
       authorNickname: nicknameById.get(p.author_id) ?? "회원",
       content: p.content,
+      screenshot_url: p.screenshot_url,
       profit_rate: p.profit_rate,
       likes_count: p.likes_count,
       comments_count: p.comments_count,

@@ -76,12 +76,65 @@ export function ContentEditor({
     const items = Array.from(dt.items ?? []).filter(
       (it) => it.kind === "file"
     );
-    if (items.length === 0) return; // 진짜 텍스트 붙여넣기는 그대로 통과
-    e.preventDefault();
-    items.forEach((it) => {
-      const file = it.getAsFile();
-      if (file) void uploadAndInsert(file, pos);
-    });
+    if (items.length > 0) {
+      e.preventDefault();
+      items.forEach((it) => {
+        const file = it.getAsFile();
+        if (file) void uploadAndInsert(file, pos);
+      });
+      return;
+    }
+
+    // 3) 이미지가 아니라 "파일 이름"만 텍스트로 복사된 경우 — 카카오톡 PC 등
+    //    일부 프로그램은 이미지를 복사해도 브라우저에는 파일명 텍스트만
+    //    전달돼요(원본 앱이 표준 클립보드 이미지 형식을 안 쓰는 경우). 이건
+    //    저희 쪽에서 고칠 수 없는 그 프로그램의 제한이라, 대신 바로
+    //    알려드리고 버튼으로 올리도록 안내해요.
+    const text = dt.getData("text/plain")?.trim() ?? "";
+    const looksLikeBareFilename =
+      /^[\w.\-]+\.(png|jpe?g|gif|webp|avif|bmp|heic|heif|mp4|webm|mov|m4v)$/i.test(
+        text
+      );
+    if (looksLikeBareFilename) {
+      e.preventDefault();
+      setError(
+        `"${text}" — 이 이미지는 파일명만 복사돼서 인식할 수 없어요 (복사한 프로그램의 제한이에요). 아래 "갤러리에서 선택" 버튼으로 올려주세요.`
+      );
+    }
+  }
+
+  async function handleClipboardButton() {
+    setError(null);
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        setError("이 브라우저는 클립보드 붙여넣기 버튼을 지원하지 않아요. Ctrl+V로 시도해주세요.");
+        return;
+      }
+      const items = await navigator.clipboard.read();
+      const pos = textareaRef.current?.selectionStart ?? value.length;
+      let found = false;
+      for (const item of items) {
+        const imageType = item.types.find(
+          (t) => t.startsWith("image/") || t.startsWith("video/")
+        );
+        if (!imageType) continue;
+        found = true;
+        const blob = await item.getType(imageType);
+        const file = new File([blob], `clipboard.${imageType.split("/")[1] || "png"}`, {
+          type: imageType,
+        });
+        await uploadAndInsert(file, pos);
+      }
+      if (!found) {
+        setError(
+          "클립보드에서 이미지를 찾을 수 없어요. 복사한 소스가 이미지 파일 자체가 아닐 수 있어요."
+        );
+      }
+    } catch {
+      setError(
+        "클립보드 접근이 거부됐어요. 브라우저 권한을 허용하거나 갤러리에서 선택해주세요."
+      );
+    }
   }
 
   function handleDrop(e: DragEvent<HTMLTextAreaElement>) {
@@ -122,6 +175,14 @@ export function ContentEditor({
           className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8] disabled:opacity-60"
         >
           📸 바로 촬영
+        </button>
+        <button
+          type="button"
+          onClick={handleClipboardButton}
+          disabled={busy}
+          className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8] disabled:opacity-60"
+        >
+          📋 클립보드 붙여넣기
         </button>
         {busy && (
           <span className="text-[11px] text-[#8fb3ff]">업로드 중...</span>

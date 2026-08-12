@@ -22,11 +22,25 @@ type PostRow = {
   post_type: "profit_proof" | "strategy_share";
   author_id: string;
   content: string | null;
+  screenshot_url: string | null;
   profit_rate: number | null;
   likes_count: number;
   comments_count: number;
   created_at: string;
 };
+
+// content 안에 이미지/동영상 파일 링크만 통째로 들어있는 경우, 목록 미리보기에는
+// URL 텍스트를 그대로 보여주지 않고 감춰요 (본문 상세에서는 정상적으로 그림으로 보여요).
+const MEDIA_LINE_RE =
+  /^https?:\/\/\S+\.(?:png|jpe?g|gif|webp|avif|mp4|webm|mov|m4v)(?:\?\S*)?$/i;
+
+function previewText(content: string) {
+  return content
+    .split("\n")
+    .filter((line) => !MEDIA_LINE_RE.test(line.trim()))
+    .join(" ")
+    .trim();
+}
 
 type MaterialRow = {
   id: string;
@@ -78,7 +92,7 @@ export default async function Home() {
     supabase
       .from("community_posts")
       .select(
-        "id,post_type,author_id,content,profit_rate,likes_count,comments_count,created_at"
+        "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,comments_count,created_at"
       )
       .eq("post_type", "profit_proof")
       .order("created_at", { ascending: false })
@@ -316,7 +330,7 @@ export default async function Home() {
                 <span className="mb-2 inline-block rounded-full bg-[rgba(232,120,75,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f6a97e]">
                   🔥 수익인증
                 </span>
-                <div className="mb-1 flex items-center gap-2">
+                <div className="mb-2 flex items-center gap-2">
                   <span className="h-6 w-6 rounded-full bg-[#243352]" />
                   <span className="text-sm font-bold text-white">
                     {nicknameById.get(p.author_id) ?? "회원"}
@@ -325,9 +339,18 @@ export default async function Home() {
                     {timeAgo(p.created_at)}
                   </span>
                 </div>
-                {p.content && (
+                {p.screenshot_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={p.screenshot_url}
+                    alt=""
+                    loading="lazy"
+                    className="mb-2 h-40 w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
+                  />
+                )}
+                {p.content && previewText(p.content) && (
                   <p className="line-clamp-2 text-sm text-[#c9d3e6]">
-                    {p.content}
+                    {previewText(p.content)}
                   </p>
                 )}
                 <div className="mt-2 flex items-center gap-3 text-xs text-[#5f6b82]">
