@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireMember } from "@/lib/supabase/dal";
 import { createClient } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/BottomNav";
+import { SafeThumb } from "@/components/SafeThumb";
 
 export const revalidate = 0;
 
@@ -35,13 +36,13 @@ export default async function MyScrapsPage() {
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <Link href="/my" className="text-sm text-[#93a0b8]">
           ← 마이페이지
         </Link>
       </header>
 
-      <div className="mx-auto max-w-md px-4 pt-4">
+      <div className="mx-auto max-w-md px-4 pt-[64px]">
         <h1 className="mb-4 text-lg font-bold text-white">스크랩한 칼럼</h1>
 
         <div className="flex flex-col gap-3">
@@ -60,18 +61,12 @@ export default async function MyScrapsPage() {
                 href={`/columns/${c.id}`}
                 className="flex items-start gap-3 rounded-2xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-4"
               >
-                {c.cover_image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={c.cover_image_url}
-                    alt=""
-                    className="h-9 w-9 shrink-0 rounded-xl object-cover"
-                  />
-                ) : (
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(59,130,246,0.15)] text-base">
-                    📊
-                  </span>
-                )}
+                <SafeThumb
+                  src={c.cover_image_url}
+                  className="h-9 w-9 shrink-0 rounded-xl object-cover"
+                  fallbackClassName="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(59,130,246,0.15)] text-base"
+                  fallbackEmoji="📊"
+                />
                 <div className="min-w-0 flex-1">
                   <span className="mb-1 inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
                     {c.category}

@@ -29,6 +29,23 @@ function previewText(content: string) {
     .trim();
 }
 
+// 스크린샷 주소가 깨져 있으면(잘못된 URL 등) 브라우저 기본 "깨진 이미지"
+// 아이콘 대신 그냥 그 자리를 감춰요.
+function PostThumb({ src }: { src: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      className="mb-2 h-40 w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
+      onError={() => setBroken(true)}
+    />
+  );
+}
+
 export function CommunityTabs({
   loggedIn,
   profitPosts,
@@ -116,15 +133,7 @@ export function CommunityTabs({
                 {p.timeLabel}
               </span>
             </div>
-            {p.screenshot_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={p.screenshot_url}
-                alt=""
-                loading="lazy"
-                className="mb-2 h-40 w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
-              />
-            )}
+            {p.screenshot_url && <PostThumb src={p.screenshot_url} />}
             {p.content && previewText(p.content) && (
               <p className="line-clamp-2 text-sm text-[#c9d3e6]">
                 {previewText(p.content)}

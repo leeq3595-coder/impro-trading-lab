@@ -88,7 +88,7 @@ export default async function CommunityPage() {
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+      <header className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <h1 className="text-base font-bold text-white">커뮤니티</h1>
         <GatedLink
           href="/community/write"
@@ -100,7 +100,7 @@ export default async function CommunityPage() {
         </GatedLink>
       </header>
 
-      <div className="mx-auto max-w-md px-4 pt-4">
+      <div className="mx-auto max-w-md px-4 pt-[68px]">
         <CommunityTabs
           loggedIn={loggedIn}
           profitPosts={(profitRows ?? []).map(toCard)}

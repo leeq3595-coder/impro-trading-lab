@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
 import { BottomNav } from "@/components/BottomNav";
 import { GatedLink } from "@/components/GatedLink";
+import { SafeThumb } from "@/components/SafeThumb";
 
 export const revalidate = 0;
 
@@ -53,11 +54,11 @@ export default async function ColumnsPage() {
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <h1 className="text-base font-bold text-white">칼럼</h1>
       </header>
 
-      <div className="mx-auto max-w-md px-4 pt-4">
+      <div className="mx-auto max-w-md px-4 pt-[64px]">
         <div className="flex flex-col gap-3">
           {(columns ?? []).length === 0 && (
             <div className="rounded-2xl border border-dashed border-[rgba(96,150,255,0.2)] bg-[#0b1120]/50 p-6 text-center text-xs text-[#5f6b82]">
@@ -94,18 +95,12 @@ export default async function ColumnsPage() {
                 href={`/columns/${c.id}`}
                 className="flex items-start gap-3 rounded-2xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-4"
               >
-                {c.cover_image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={c.cover_image_url}
-                    alt=""
-                    className="h-9 w-9 shrink-0 rounded-xl object-cover"
-                  />
-                ) : (
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(59,130,246,0.15)] text-base">
-                    📊
-                  </span>
-                )}
+                <SafeThumb
+                  src={c.cover_image_url}
+                  className="h-9 w-9 shrink-0 rounded-xl object-cover"
+                  fallbackClassName="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(59,130,246,0.15)] text-base"
+                  fallbackEmoji="📊"
+                />
                 <div className="min-w-0 flex-1">
                   <span className="mb-1 inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
                     {c.category}

@@ -25,7 +25,7 @@ export default async function MaterialsPage() {
     return (
       <main className="min-h-screen bg-[#05070d] pb-24">
         <AutoGate message="자료실은 회원만 볼 수 있어요. 간편가입하고 무료 자료부터 확인해보세요." />
-        <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+        <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
           <h1 className="text-base font-bold text-white">자료실</h1>
         </header>
         <div className="mx-auto max-w-md px-4 py-16 text-center">
@@ -59,11 +59,11 @@ export default async function MaterialsPage() {
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <h1 className="text-base font-bold text-white">자료실</h1>
       </header>
 
-      <div className="mx-auto max-w-md px-4 pt-4">
+      <div className="mx-auto max-w-md px-4 pt-[64px]">
         <div className="flex flex-col gap-3">
           {(materials ?? []).length === 0 && (
             <div className="rounded-2xl border border-dashed border-[rgba(96,150,255,0.2)] bg-[#0b1120]/50 p-6 text-center text-xs text-[#5f6b82]">

@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/supabase/dal";
 import { BottomNav } from "@/components/BottomNav";
 import { GatedLink } from "@/components/GatedLink";
 import { HomeBannerCarousel } from "@/components/HomeBannerCarousel";
+import { SafeThumb } from "@/components/SafeThumb";
 
 export const revalidate = 0;
 
@@ -140,8 +141,9 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      {/* 헤더 */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+      {/* 헤더 — 모바일 사파리에서 sticky가 배너 위로 겹쳐 보이는 문제가 있어서
+          fixed로 바꾸고, 아래 콘텐츠 영역에 그만큼 여백(pt)을 줬어요. */}
+      <header className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#38bdf8] to-[#3b82f6] text-sm font-bold text-[#04101f]">
             임
@@ -160,7 +162,7 @@ export default async function Home() {
         </GatedLink>
       </header>
 
-      <div className="mx-auto max-w-md px-4 pt-4">
+      <div className="mx-auto max-w-md px-4 pt-[76px]">
         {/* 배너 캐러셀 */}
         <HomeBannerCarousel urls={bannerUrls} />
 
@@ -255,18 +257,12 @@ export default async function Home() {
                   href={`/columns/${c.id}`}
                   className="flex items-start gap-3 rounded-2xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-4"
                 >
-                  {c.cover_image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={c.cover_image_url}
-                      alt=""
-                      className="h-9 w-9 shrink-0 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(59,130,246,0.15)] text-base">
-                      📊
-                    </span>
-                  )}
+                  <SafeThumb
+                    src={c.cover_image_url}
+                    className="h-9 w-9 shrink-0 rounded-xl object-cover"
+                    fallbackClassName="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(59,130,246,0.15)] text-base"
+                    fallbackEmoji="📊"
+                  />
                   <div className="min-w-0 flex-1">
                     <span className="mb-1 inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
                       {c.category}
@@ -339,15 +335,10 @@ export default async function Home() {
                     {timeAgo(p.created_at)}
                   </span>
                 </div>
-                {p.screenshot_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={p.screenshot_url}
-                    alt=""
-                    loading="lazy"
-                    className="mb-2 h-40 w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
-                  />
-                )}
+                <SafeThumb
+                  src={p.screenshot_url}
+                  className="mb-2 h-40 w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
+                />
                 {p.content && previewText(p.content) && (
                   <p className="line-clamp-2 text-sm text-[#c9d3e6]">
                     {previewText(p.content)}

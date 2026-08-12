@@ -7,6 +7,7 @@ import { AutoGate } from "@/components/AutoGate";
 import { LikeButton } from "@/components/LikeButton";
 import { CommentsSection, type CommentItem } from "@/components/CommentsSection";
 import { RichContent } from "@/components/RichContent";
+import { SafeThumb } from "@/components/SafeThumb";
 
 export const revalidate = 0;
 
@@ -34,7 +35,7 @@ export default async function CommunityDetailPage({
     return (
       <main className="min-h-screen bg-[#05070d] pb-24">
         <AutoGate message="매매법공유는 회원만 볼 수 있어요. 간편가입하고 확인해보세요." />
-        <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+        <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
           <Link href="/community" className="text-sm text-[#93a0b8]">
             ← 커뮤니티
           </Link>
@@ -116,12 +117,12 @@ export default async function CommunityDetailPage({
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <Link href="/community" className="text-sm text-[#93a0b8]">
           ← 커뮤니티
         </Link>
       </header>
-      <article className="mx-auto max-w-md px-4 py-6">
+      <article className="mx-auto max-w-md px-4 pb-6 pt-[68px]">
         <span
           className={`mb-3 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
             post.post_type === "profit_proof"
@@ -157,12 +158,10 @@ export default async function CommunityDetailPage({
           </div>
         )}
 
-        {post.post_type === "profit_proof" && post.screenshot_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+        {post.post_type === "profit_proof" && (
+          <SafeThumb
             src={post.screenshot_url}
             alt="인증 스크린샷"
-            loading="lazy"
             className="mb-4 w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
           />
         )}

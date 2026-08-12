@@ -10,11 +10,11 @@ export default async function MyPage() {
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <h1 className="text-base font-bold text-white">마이페이지</h1>
       </header>
 
-      <div className="mx-auto max-w-md px-4 pt-6">
+      <div className="mx-auto max-w-md px-4 pt-[64px]">
         <div className="mb-6 flex items-center gap-4 rounded-2xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-5">
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#243352] text-xl">
             👤

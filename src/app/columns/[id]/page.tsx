@@ -6,6 +6,7 @@ import { AutoGate } from "@/components/AutoGate";
 import { RichContent } from "@/components/RichContent";
 import { ScrapButton } from "@/components/ScrapButton";
 import { CommentsSection, type CommentItem } from "@/components/CommentsSection";
+import { SafeThumb } from "@/components/SafeThumb";
 import Link from "next/link";
 
 export const revalidate = 0;
@@ -64,7 +65,7 @@ export default async function ColumnDetailPage({
       <main className="min-h-screen bg-[#05070d] pb-24">
         <AutoGate message="VIP 칼럼은 회원만 볼 수 있어요. 간편가입하고 바로 확인해보세요." />
         {!isLanding && (
-          <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+          <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
             <Link href="/columns" className="text-sm text-[#93a0b8]">
               ← 칼럼
             </Link>
@@ -97,7 +98,7 @@ export default async function ColumnDetailPage({
     return (
       <main className="min-h-screen bg-[#05070d] pb-24">
         {!isLanding && (
-          <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+          <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
             <Link href="/columns" className="text-sm text-[#93a0b8]">
               ← 칼럼
             </Link>
@@ -146,14 +147,10 @@ export default async function ColumnDetailPage({
             <span className="h-6 w-6 rounded-full bg-[#243352]" />
             {authorNickname} · {dateLabel}
           </div>
-          {column.cover_image_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={column.cover_image_url}
-              alt=""
-              className="mb-6 w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
-            />
-          )}
+          <SafeThumb
+            src={column.cover_image_url}
+            className="mb-6 w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
+          />
           <RichContent content={column.content} />
         </article>
 
@@ -221,12 +218,12 @@ export default async function ColumnDetailPage({
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <Link href="/columns" className="text-sm text-[#93a0b8]">
           ← 칼럼
         </Link>
       </header>
-      <article className="mx-auto max-w-md px-4 py-6">
+      <article className="mx-auto max-w-md px-4 pb-6 pt-[68px]">
         <div className="mb-2 flex items-start justify-between gap-3">
           <span className="inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
             {column.category}
@@ -243,14 +240,10 @@ export default async function ColumnDetailPage({
         <div className="mb-4 text-xs text-[#5f6b82]">
           {authorNickname} · {dateLabel}
         </div>
-        {column.cover_image_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={column.cover_image_url}
-            alt=""
-            className="mb-4 w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
-          />
-        )}
+        <SafeThumb
+          src={column.cover_image_url}
+          className="mb-4 w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
+        />
         <RichContent content={column.content} />
 
         <CommentsSection
