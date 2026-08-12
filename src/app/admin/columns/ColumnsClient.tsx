@@ -17,6 +17,7 @@ type ColumnRow = {
   is_hidden: boolean;
   cover_image_url: string | null;
   published_at: string;
+  likes_count: number;
 };
 
 const EMPTY_FORM = {
@@ -27,6 +28,7 @@ const EMPTY_FORM = {
   is_published: true,
   is_hidden: false,
   cover_image_url: "",
+  likes_count: 0,
 };
 
 export default function ColumnsClient({ adminId }: { adminId: string }) {
@@ -59,7 +61,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
       const { data, error } = await supabase
         .from("columns")
         .select(
-          "id,title,content,category,is_vip,is_published,is_hidden,cover_image_url,published_at"
+          "id,title,content,category,is_vip,is_published,is_hidden,cover_image_url,published_at,likes_count"
         )
         .eq("is_hidden", false)
         .order("published_at", { ascending: false });
@@ -93,6 +95,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
       is_published: row.is_published,
       is_hidden: row.is_hidden,
       cover_image_url: row.cover_image_url ?? "",
+      likes_count: row.likes_count ?? 0,
     });
     setFormOpen(true);
   }
@@ -116,6 +119,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
             is_published: form.is_published,
             is_hidden: form.is_hidden,
             cover_image_url: form.cover_image_url.trim() || null,
+            likes_count: form.likes_count,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingId);
@@ -129,6 +133,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
           is_published: form.is_published,
           is_hidden: form.is_hidden,
           cover_image_url: form.cover_image_url.trim() || null,
+          likes_count: form.likes_count,
           author_id: adminId,
         });
         if (error) throw error;
@@ -285,6 +290,21 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                   />
                   즉시 공개
                 </label>
+                <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
+                  ❤️ 좋아요 수
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.likes_count}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        likes_count: Math.max(0, Number(e.target.value) || 0),
+                      }))
+                    }
+                    className="w-24 rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-2 py-1.5 text-sm text-white outline-none focus:border-[#3b82f6]"
+                  />
+                </label>
               </div>
               <p className="rounded-lg border border-[rgba(96,150,255,0.15)] bg-[rgba(96,150,255,0.04)] px-3 py-2 text-[11px] leading-relaxed text-[#5f6b82]">
                 💡 인스타 릴스용 히든 랜딩페이지는 여기가 아니라{" "}
@@ -352,7 +372,8 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                     {new Date(r.published_at)
                       .toISOString()
                       .slice(0, 10)
-                      .replace(/-/g, ".")}
+                      .replace(/-/g, ".")}{" "}
+                    · ❤️ {r.likes_count ?? 0}
                   </div>
                 </div>
               </div>

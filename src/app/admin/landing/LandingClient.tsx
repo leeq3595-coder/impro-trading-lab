@@ -17,6 +17,7 @@ type LandingRow = {
   is_hidden: boolean;
   cover_image_url: string | null;
   published_at: string;
+  likes_count: number;
 };
 
 const EMPTY_FORM = {
@@ -26,6 +27,7 @@ const EMPTY_FORM = {
   is_vip: false,
   is_published: true,
   cover_image_url: "",
+  likes_count: 0,
 };
 
 export default function LandingClient({ adminId }: { adminId: string }) {
@@ -67,7 +69,7 @@ export default function LandingClient({ adminId }: { adminId: string }) {
       const { data, error } = await supabase
         .from("columns")
         .select(
-          "id,title,content,category,is_vip,is_published,is_hidden,cover_image_url,published_at"
+          "id,title,content,category,is_vip,is_published,is_hidden,cover_image_url,published_at,likes_count"
         )
         .eq("is_hidden", true)
         .order("published_at", { ascending: false });
@@ -100,6 +102,7 @@ export default function LandingClient({ adminId }: { adminId: string }) {
       is_vip: row.is_vip,
       is_published: row.is_published,
       cover_image_url: row.cover_image_url ?? "",
+      likes_count: row.likes_count ?? 0,
     });
     setFormOpen(true);
   }
@@ -123,6 +126,7 @@ export default function LandingClient({ adminId }: { adminId: string }) {
             is_published: form.is_published,
             is_hidden: true,
             cover_image_url: form.cover_image_url.trim() || null,
+            likes_count: form.likes_count,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingId);
@@ -136,6 +140,7 @@ export default function LandingClient({ adminId }: { adminId: string }) {
           is_published: form.is_published,
           is_hidden: true,
           cover_image_url: form.cover_image_url.trim() || null,
+          likes_count: form.likes_count,
           author_id: adminId,
         });
         if (error) throw error;
@@ -268,6 +273,21 @@ export default function LandingClient({ adminId }: { adminId: string }) {
                   />
                   즉시 공개 (꺼두면 링크로도 안 열려요)
                 </label>
+                <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
+                  ❤️ 좋아요 수
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.likes_count}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        likes_count: Math.max(0, Number(e.target.value) || 0),
+                      }))
+                    }
+                    className="w-24 rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-2 py-1.5 text-sm text-white outline-none focus:border-[#3b82f6]"
+                  />
+                </label>
               </div>
               <div className="mt-1 flex gap-2">
                 <button
@@ -325,6 +345,9 @@ export default function LandingClient({ adminId }: { adminId: string }) {
                   </div>
                   <div className="mt-1 truncate text-xs text-[#5f6b82]">
                     {linkFor(r)}
+                  </div>
+                  <div className="mt-1 text-xs text-[#5f6b82]">
+                    ❤️ {r.likes_count ?? 0}
                   </div>
                 </div>
               </div>

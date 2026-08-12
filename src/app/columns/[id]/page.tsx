@@ -5,7 +5,6 @@ import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 import { RichContent } from "@/components/RichContent";
 import { ScrapButton } from "@/components/ScrapButton";
-import { CommentsSection, type CommentItem } from "@/components/CommentsSection";
 import { SafeThumb } from "@/components/SafeThumb";
 import Link from "next/link";
 
@@ -24,7 +23,7 @@ export default async function ColumnDetailPage({
   const { data: column } = await supabase
     .from("columns")
     .select(
-      "id,title,category,is_vip,is_hidden,content,cover_image_url,author_id,published_at"
+      "id,title,category,is_vip,is_hidden,content,cover_image_url,author_id,published_at,likes_count"
     )
     .eq("id", id)
     .maybeSingle();
@@ -148,6 +147,9 @@ export default async function ColumnDetailPage({
           <div className="mb-6 flex items-center gap-2 text-xs text-[#787774]">
             <span className="h-6 w-6 rounded-full bg-[#eeeeec]" />
             {authorNickname} · {dateLabel}
+            <span className="ml-auto flex items-center gap-1 text-[#787774]">
+              ❤️ {column.likes_count ?? 0}
+            </span>
           </div>
           <SafeThumb
             src={column.cover_image_url}
@@ -175,7 +177,7 @@ export default async function ColumnDetailPage({
               rel="noopener noreferrer"
               className="flex-[1.4] rounded-xl bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] py-3 text-center text-sm font-bold text-[#04101f]"
             >
-              👉 🔥경제 노른자 소통방 입장하기→
+              👉노른자 소통방 입장하기🔥→
             </a>
           </div>
         </div>
@@ -193,34 +195,6 @@ export default async function ColumnDetailPage({
       .maybeSingle();
     scrapped = !!scrapRow;
   }
-
-  const { data: columnCommentRows } = await supabase
-    .from("comments")
-    .select("id,author_id,content,created_at")
-    .eq("parent_type", "column")
-    .eq("parent_id", column.id)
-    .order("created_at", { ascending: true });
-
-  const columnCommentAuthorIds = Array.from(
-    new Set((columnCommentRows ?? []).map((c) => c.author_id))
-  );
-  let columnCommentNicknameById = new Map<string, string>();
-  if (columnCommentAuthorIds.length > 0) {
-    const { data: commentAuthors } = await supabase
-      .from("public_profiles")
-      .select("id,nickname")
-      .in("id", columnCommentAuthorIds);
-    columnCommentNicknameById = new Map(
-      (commentAuthors ?? []).map((a) => [a.id, a.nickname])
-    );
-  }
-  const columnComments: CommentItem[] = (columnCommentRows ?? []).map((c) => ({
-    id: c.id,
-    author_id: c.author_id,
-    authorNickname: columnCommentNicknameById.get(c.author_id) ?? "회원",
-    content: c.content,
-    created_at: c.created_at,
-  }));
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
@@ -243,23 +217,17 @@ export default async function ColumnDetailPage({
         <h1 className="mb-2 text-xl font-bold leading-snug text-white">
           {column.title}
         </h1>
-        <div className="mb-4 text-xs text-[#5f6b82]">
+        <div className="mb-4 flex items-center gap-2 text-xs text-[#5f6b82]">
           {authorNickname} · {dateLabel}
+          <span className="ml-auto flex items-center gap-1 text-[#93a0b8]">
+            ❤️ {column.likes_count ?? 0}
+          </span>
         </div>
         <SafeThumb
           src={column.cover_image_url}
           className="mb-4 w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
         />
         <RichContent content={column.content} />
-
-        <CommentsSection
-          parentType="column"
-          parentId={column.id}
-          path={`/columns/${column.id}`}
-          loggedIn={loggedIn}
-          currentUserId={profile?.id ?? null}
-          comments={columnComments}
-        />
       </article>
       <BottomNav loggedIn={loggedIn} />
     </main>
