@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
 import { MediaUploader } from "@/components/MediaUploader";
+import { ContentEditor } from "@/components/ContentEditor";
 
 type ColumnRow = {
   id: string;
@@ -230,55 +231,20 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                   folder="columns/cover"
                   label="대표 이미지 업로드"
                   accept="image/*"
+                  showCamera
                   onUploaded={(url) =>
                     setForm((f) => ({ ...f, cover_image_url: url }))
                   }
                 />
               </div>
-              <textarea
+              <ContentEditor
                 value={form.content}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, content: e.target.value }))
-                }
+                onChange={(v) => setForm((f) => ({ ...f, content: v }))}
                 placeholder="본문 내용"
                 rows={8}
-                className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
+                folder="columns/body"
+                helpText="유튜브 링크만 있는 줄도 자동으로 영상으로 바뀌어요. 강조 박스로 보이게 하려면 그 줄 맨 앞에 !! 를 붙여주세요 (예: !! 오늘 지지선은 여기예요)."
               />
-              <div className="-mt-1 flex flex-wrap items-center gap-2">
-                <MediaUploader
-                  folder="columns/body"
-                  label="본문에 사진 추가"
-                  accept="image/*"
-                  onUploaded={(url) =>
-                    setForm((f) => ({
-                      ...f,
-                      content: f.content
-                        ? `${f.content}\n${url}\n`
-                        : `${url}\n`,
-                    }))
-                  }
-                />
-                <MediaUploader
-                  folder="columns/body"
-                  label="본문에 동영상 추가"
-                  accept="video/*"
-                  onUploaded={(url) =>
-                    setForm((f) => ({
-                      ...f,
-                      content: f.content
-                        ? `${f.content}\n${url}\n`
-                        : `${url}\n`,
-                    }))
-                  }
-                />
-              </div>
-              <p className="-mt-1 text-[11px] leading-relaxed text-[#5f6b82]">
-                💡 위 버튼으로 사진/동영상을 올리면 본문 맨 아래에 자동으로
-                줄이 추가돼요. 원하는 위치로 그 줄을 잘라서 옮겨도 돼요.
-                유튜브 링크만 있는 줄도 자동으로 영상으로 바뀌어요. 강조
-                박스로 보이게 하려면 그 줄 맨 앞에 <code>!!</code>를 붙여주세요
-                (예: <code>!! 오늘 지지선은 여기예요</code>).
-              </p>
               <div className="flex flex-wrap items-center gap-4">
                 <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
                   카테고리

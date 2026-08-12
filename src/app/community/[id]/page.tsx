@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 import { LikeButton } from "@/components/LikeButton";
 import { CommentsSection, type CommentItem } from "@/components/CommentsSection";
+import { RichContent } from "@/components/RichContent";
 
 export const revalidate = 0;
 
@@ -22,7 +23,7 @@ export default async function CommunityDetailPage({
   const { data: post } = await supabase
     .from("community_posts")
     .select(
-      "id,post_type,author_id,title,content,symbol,trade_count,seed_amount,profit_amount,profit_rate,likes_count,comments_count,created_at"
+      "id,post_type,author_id,title,content,symbol,trade_count,seed_amount,profit_amount,profit_rate,screenshot_url,likes_count,comments_count,created_at"
     )
     .eq("id", id)
     .maybeSingle();
@@ -156,11 +157,17 @@ export default async function CommunityDetailPage({
           </div>
         )}
 
-        {post.content && (
-          <div className="whitespace-pre-wrap text-sm leading-relaxed text-[#e2e8f5]">
-            {post.content}
-          </div>
+        {post.post_type === "profit_proof" && post.screenshot_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.screenshot_url}
+            alt="인증 스크린샷"
+            loading="lazy"
+            className="mb-4 w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
+          />
         )}
+
+        {post.content && <RichContent content={post.content} />}
 
         <div className="mt-6 flex items-center gap-3">
           <LikeButton

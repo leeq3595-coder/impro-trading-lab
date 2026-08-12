@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
 import { MediaUploader } from "@/components/MediaUploader";
+import { ContentEditor } from "@/components/ContentEditor";
 
 type LandingRow = {
   id: string;
@@ -222,54 +223,20 @@ export default function LandingClient({ adminId }: { adminId: string }) {
                   folder="landing/cover"
                   label="대표 이미지 업로드"
                   accept="image/*"
+                  showCamera
                   onUploaded={(url) =>
                     setForm((f) => ({ ...f, cover_image_url: url }))
                   }
                 />
               </div>
-              <textarea
+              <ContentEditor
                 value={form.content}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, content: e.target.value }))
-                }
+                onChange={(v) => setForm((f) => ({ ...f, content: v }))}
                 placeholder="본문 내용 (타이틀/작성자/작성일은 자동으로 상단에 표시돼요)"
                 rows={10}
-                className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
+                folder="landing/body"
+                helpText="강조 박스로 보이게 하려면 그 줄 맨 앞에 !! 를 붙여주세요 (예: !! 놓치면 안 되는 포인트)."
               />
-              <div className="-mt-1 flex flex-wrap items-center gap-2">
-                <MediaUploader
-                  folder="landing/body"
-                  label="본문에 사진 추가"
-                  accept="image/*"
-                  onUploaded={(url) =>
-                    setForm((f) => ({
-                      ...f,
-                      content: f.content
-                        ? `${f.content}\n${url}\n`
-                        : `${url}\n`,
-                    }))
-                  }
-                />
-                <MediaUploader
-                  folder="landing/body"
-                  label="본문에 동영상 추가"
-                  accept="video/*"
-                  onUploaded={(url) =>
-                    setForm((f) => ({
-                      ...f,
-                      content: f.content
-                        ? `${f.content}\n${url}\n`
-                        : `${url}\n`,
-                    }))
-                  }
-                />
-              </div>
-              <p className="-mt-1 text-[11px] leading-relaxed text-[#5f6b82]">
-                💡 위 버튼으로 사진/동영상을 올리면 본문 맨 아래에 자동으로
-                줄이 추가돼요. 원하는 위치로 잘라서 옮겨도 돼요. 강조 박스로
-                보이게 하려면 그 줄 맨 앞에 <code>!!</code>를 붙여주세요 (예:{" "}
-                <code>!! 놓치면 안 되는 포인트</code>).
-              </p>
               <div className="flex flex-wrap items-center gap-4">
                 <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
                   카테고리

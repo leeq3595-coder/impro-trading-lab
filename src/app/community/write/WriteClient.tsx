@@ -3,6 +3,8 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { createCommunityPost } from "./actions";
+import { MediaUploader } from "@/components/MediaUploader";
+import { ContentEditor } from "@/components/ContentEditor";
 
 export default function WriteClient() {
   const [state, formAction, pending] = useActionState(
@@ -12,6 +14,9 @@ export default function WriteClient() {
   const [postType, setPostType] = useState<"profit_proof" | "strategy_share">(
     "profit_proof"
   );
+  const [screenshotUrl, setScreenshotUrl] = useState("");
+  const [profitContent, setProfitContent] = useState("");
+  const [strategyContent, setStrategyContent] = useState("");
 
   return (
     <main className="min-h-screen bg-[#05070d] px-4 py-6 pb-24">
@@ -79,16 +84,29 @@ export default function WriteClient() {
                 placeholder="매매 횟수 (선택)"
                 className="rounded-xl border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
               />
-              <input
-                name="screenshot_url"
-                placeholder="인증 스크린샷 URL (선택)"
-                className="rounded-xl border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
-              />
-              <textarea
+              <div className="flex flex-col gap-2">
+                <input
+                  name="screenshot_url"
+                  value={screenshotUrl}
+                  onChange={(e) => setScreenshotUrl(e.target.value)}
+                  placeholder="인증 스크린샷 URL (선택)"
+                  className="rounded-xl border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
+                />
+                <MediaUploader
+                  folder="community/screenshot"
+                  label="스크린샷 업로드"
+                  accept="image/*"
+                  showCamera
+                  onUploaded={(url) => setScreenshotUrl(url)}
+                />
+              </div>
+              <ContentEditor
                 name="content"
+                value={profitContent}
+                onChange={setProfitContent}
                 placeholder="한줄 소감 (선택)"
                 rows={3}
-                className="rounded-xl border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
+                folder="community/body"
               />
             </>
           ) : (
@@ -99,12 +117,13 @@ export default function WriteClient() {
                 required
                 className="rounded-xl border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
               />
-              <textarea
+              <ContentEditor
                 name="content"
+                value={strategyContent}
+                onChange={setStrategyContent}
                 placeholder="매매법 내용"
                 rows={8}
-                required
-                className="rounded-xl border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
+                folder="community/body"
               />
             </>
           )}
