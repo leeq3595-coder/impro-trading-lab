@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
+import { LikeButton } from "@/components/LikeButton";
+import { CommentsSection, type CommentItem } from "@/components/CommentsSection";
 
 export const revalidate = 0;
 
@@ -71,6 +73,46 @@ export default async function CommunityDetailPage({
     .slice(0, 10)
     .replace(/-/g, ".");
 
+  let liked = false;
+  if (profile) {
+    const { data: likeRow } = await supabase
+      .from("likes")
+      .select("id")
+      .eq("parent_type", "community_post")
+      .eq("parent_id", id)
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    liked = !!likeRow;
+  }
+
+  const { data: commentRows } = await supabase
+    .from("comments")
+    .select("id,author_id,content,created_at")
+    .eq("parent_type", "community_post")
+    .eq("parent_id", id)
+    .order("created_at", { ascending: true });
+
+  const commentAuthorIds = Array.from(
+    new Set((commentRows ?? []).map((c) => c.author_id))
+  );
+  let commentNicknameById = new Map<string, string>();
+  if (commentAuthorIds.length > 0) {
+    const { data: commentAuthors } = await supabase
+      .from("public_profiles")
+      .select("id,nickname")
+      .in("id", commentAuthorIds);
+    commentNicknameById = new Map(
+      (commentAuthors ?? []).map((a) => [a.id, a.nickname])
+    );
+  }
+  const comments: CommentItem[] = (commentRows ?? []).map((c) => ({
+    id: c.id,
+    author_id: c.author_id,
+    authorNickname: commentNicknameById.get(c.author_id) ?? "회원",
+    content: c.content,
+    created_at: c.created_at,
+  }));
+
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
       <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
@@ -120,10 +162,24 @@ export default async function CommunityDetailPage({
           </div>
         )}
 
-        <div className="mt-6 flex items-center gap-4 text-sm text-[#93a0b8]">
-          <span>❤️ {post.likes_count}</span>
-          <span>💬 {post.comments_count}</span>
+        <div className="mt-6 flex items-center gap-3">
+          <LikeButton
+            postId={post.id}
+            userId={profile?.id ?? null}
+            initialLiked={liked}
+            initialCount={post.likes_count}
+          />
+          <span className="text-sm text-[#93a0b8]">💬 {post.comments_count}</span>
         </div>
+
+        <CommentsSection
+          parentType="community_post"
+          parentId={post.id}
+          path={`/community/${post.id}`}
+          loggedIn={loggedIn}
+          currentUserId={profile?.id ?? null}
+          comments={comments}
+        />
       </article>
       <BottomNav loggedIn={loggedIn} />
     </main>

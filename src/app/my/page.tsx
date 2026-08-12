@@ -70,7 +70,7 @@ export default async function MyPage() {
 
         <div className="mb-6 flex flex-col divide-y divide-[rgba(96,150,255,0.1)] overflow-hidden rounded-2xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120]">
           <MenuRow label="내가 쓴 글" />
-          <MenuRow label="스크랩" />
+          <MenuRow label="스크랩" href="/my/scraps" />
           <MenuRow label="알림 설정" />
           <MenuRow label="고객센터" />
         </div>
@@ -96,11 +96,26 @@ export default async function MyPage() {
   );
 }
 
-function MenuRow({ label }: { label: string }) {
-  return (
-    <div className="flex items-center justify-between px-4 py-3.5 text-sm text-[#c9d3e6]">
+function MenuRow({ label, href }: { label: string; href?: string }) {
+  const content = (
+    <>
       {label}
       <span className="text-[#5f6b82]">›</span>
+    </>
+  );
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="flex items-center justify-between px-4 py-3.5 text-sm text-[#c9d3e6]"
+      >
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <div className="flex items-center justify-between px-4 py-3.5 text-sm text-[#c9d3e6] opacity-50">
+      {content}
     </div>
   );
 }

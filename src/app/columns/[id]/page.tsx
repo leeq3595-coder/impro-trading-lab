@@ -4,6 +4,8 @@ import { getCurrentProfile } from "@/lib/supabase/dal";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 import { RichContent } from "@/components/RichContent";
+import { ScrapButton } from "@/components/ScrapButton";
+import { CommentsSection, type CommentItem } from "@/components/CommentsSection";
 import Link from "next/link";
 
 export const revalidate = 0;
@@ -178,6 +180,45 @@ export default async function ColumnDetailPage({
     );
   }
 
+  let scrapped = false;
+  if (profile) {
+    const { data: scrapRow } = await supabase
+      .from("scraps")
+      .select("id")
+      .eq("column_id", column.id)
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    scrapped = !!scrapRow;
+  }
+
+  const { data: columnCommentRows } = await supabase
+    .from("comments")
+    .select("id,author_id,content,created_at")
+    .eq("parent_type", "column")
+    .eq("parent_id", column.id)
+    .order("created_at", { ascending: true });
+
+  const columnCommentAuthorIds = Array.from(
+    new Set((columnCommentRows ?? []).map((c) => c.author_id))
+  );
+  let columnCommentNicknameById = new Map<string, string>();
+  if (columnCommentAuthorIds.length > 0) {
+    const { data: commentAuthors } = await supabase
+      .from("public_profiles")
+      .select("id,nickname")
+      .in("id", columnCommentAuthorIds);
+    columnCommentNicknameById = new Map(
+      (commentAuthors ?? []).map((a) => [a.id, a.nickname])
+    );
+  }
+  const columnComments: CommentItem[] = (columnCommentRows ?? []).map((c) => ({
+    id: c.id,
+    author_id: c.author_id,
+    authorNickname: columnCommentNicknameById.get(c.author_id) ?? "회원",
+    content: c.content,
+    created_at: c.created_at,
+  }));
+
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
       <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
@@ -186,9 +227,16 @@ export default async function ColumnDetailPage({
         </Link>
       </header>
       <article className="mx-auto max-w-md px-4 py-6">
-        <span className="mb-2 inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
-          {column.category}
-        </span>
+        <div className="mb-2 flex items-start justify-between gap-3">
+          <span className="inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
+            {column.category}
+          </span>
+          <ScrapButton
+            columnId={column.id}
+            userId={profile?.id ?? null}
+            initialScrapped={scrapped}
+          />
+        </div>
         <h1 className="mb-2 text-xl font-bold leading-snug text-white">
           {column.title}
         </h1>
@@ -204,6 +252,15 @@ export default async function ColumnDetailPage({
           />
         )}
         <RichContent content={column.content} />
+
+        <CommentsSection
+          parentType="column"
+          parentId={column.id}
+          path={`/columns/${column.id}`}
+          loggedIn={loggedIn}
+          currentUserId={profile?.id ?? null}
+          comments={columnComments}
+        />
       </article>
       <BottomNav loggedIn={loggedIn} />
     </main>

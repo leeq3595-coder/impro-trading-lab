@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
 import { BottomNav } from "@/components/BottomNav";
+import { GatedLink } from "@/components/GatedLink";
 import { CommunityTabs, type CommunityPostCard } from "@/components/CommunityTabs";
 
 export const revalidate = 0;
@@ -85,8 +86,16 @@ export default async function CommunityPage() {
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="sticky top-0 z-40 border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[rgba(96,150,255,0.12)] bg-[#05070d]/95 px-4 py-3 backdrop-blur">
         <h1 className="text-base font-bold text-white">커뮤니티</h1>
+        <GatedLink
+          href="/community/write"
+          loggedIn={loggedIn}
+          message="글쓰기는 로그인 후 이용할 수 있어요."
+          className="rounded-lg bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-3 py-1.5 text-xs font-bold text-[#04101f]"
+        >
+          ✏️ 글쓰기
+        </GatedLink>
       </header>
 
       <div className="mx-auto max-w-md px-4 pt-4">

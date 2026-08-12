@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 type Slide = {
   key: string;
@@ -12,7 +12,10 @@ type Slide = {
   ctaClass: string;
   cardClass: string;
   url: string;
+  proofImage?: string;
 };
+
+const AUTOPLAY_MS = 4500;
 
 export function HomeBannerCarousel({ urls }: { urls: Record<string, string> }) {
   const slides: Slide[] = [
@@ -57,6 +60,7 @@ export function HomeBannerCarousel({ urls }: { urls: Record<string, string> }) {
       cardClass:
         "from-[#0e2318] to-[#123420] border-[rgba(74,222,128,0.25)]",
       url: urls.banner2_prop || "/signup",
+      proofImage: "/prop-proof.png",
     },
     {
       key: "banner3_youtube",
@@ -80,6 +84,7 @@ export function HomeBannerCarousel({ urls }: { urls: Record<string, string> }) {
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const [hovering, setHovering] = useState(false);
 
   function handleScroll() {
     const el = scrollerRef.current;
@@ -94,11 +99,25 @@ export function HomeBannerCarousel({ urls }: { urls: Record<string, string> }) {
     el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
   }
 
+  // 자동 슬라이드 — 4.5초마다 다음 배너로. 사용자가 직접 넘기면(active 변경) 그 시점부터 다시 타이머 시작.
+  useEffect(() => {
+    if (hovering) return;
+    const timer = setTimeout(() => {
+      goTo((active + 1) % slides.length);
+    }, AUTOPLAY_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, hovering, slides.length]);
+
   return (
     <div className="mb-4">
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
+        onTouchStart={() => setHovering(true)}
+        onTouchEnd={() => setHovering(false)}
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
         className="flex snap-x snap-mandatory overflow-x-auto scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
         {slides.map((s) => (
@@ -107,24 +126,34 @@ export function HomeBannerCarousel({ urls }: { urls: Record<string, string> }) {
             href={s.url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`block w-full shrink-0 snap-center overflow-hidden rounded-2xl border bg-gradient-to-br p-5 ${s.cardClass}`}
+            className={`relative block w-full shrink-0 snap-center overflow-hidden rounded-2xl border bg-gradient-to-br p-5 ${s.cardClass}`}
           >
-            <div
-              className={`mb-2 inline-block rounded-full px-2 py-1 text-[11px] font-bold ${s.tagClass}`}
-            >
-              {s.tag}
+            {s.proofImage && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={s.proofImage}
+                alt="실제 출금 내역"
+                className="absolute right-4 top-4 w-24 rounded-lg shadow-lg shadow-black/40 sm:w-28"
+              />
+            )}
+            <div className={s.proofImage ? "max-w-[62%]" : ""}>
+              <div
+                className={`mb-2 inline-block rounded-full px-2 py-1 text-[11px] font-bold ${s.tagClass}`}
+              >
+                {s.tag}
+              </div>
+              <div className="mb-1 text-lg font-bold leading-snug text-white">
+                {s.title}
+              </div>
+              <p className="mb-4 text-xs leading-relaxed text-[#93a0b8]">
+                {s.desc}
+              </p>
+              <span
+                className={`inline-block rounded-xl px-4 py-2 text-sm font-bold ${s.ctaClass}`}
+              >
+                {s.cta}
+              </span>
             </div>
-            <div className="mb-1 text-lg font-bold leading-snug text-white">
-              {s.title}
-            </div>
-            <p className="mb-4 text-xs leading-relaxed text-[#93a0b8]">
-              {s.desc}
-            </p>
-            <span
-              className={`inline-block rounded-xl px-4 py-2 text-sm font-bold ${s.ctaClass}`}
-            >
-              {s.cta}
-            </span>
           </a>
         ))}
       </div>
