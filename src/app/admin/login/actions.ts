@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { errorDetail } from "@/lib/errorDetail";
 
 export type AdminAuthState = { error?: string } | undefined;
 
@@ -16,11 +17,23 @@ export async function adminLogin(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  if (error || !data.user) {
+  let data, error;
+  try {
+    ({ data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    }));
+  } catch (e) {
+    console.error("[admin login] unexpected throw:", errorDetail(e));
+    return { error: `로그인 중 예외 발생: ${errorDetail(e)}` };
+  }
+  if (error) {
+    console.error("[admin login] supabase auth error:", errorDetail(error));
+    return {
+      error: `로그인 오류: ${error.message} — 상세: ${errorDetail(error)}`,
+    };
+  }
+  if (!data.user) {
     return { error: "이메일 또는 비밀번호가 올바르지 않아요." };
   }
 

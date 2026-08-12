@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { errorDetail } from "@/lib/errorDetail";
 
 export type SignupState =
   | { error: string }
@@ -27,17 +28,28 @@ export async function createAccount(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { nickname } },
-  });
+  let data, error;
+  try {
+    ({ data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { nickname } },
+    }));
+  } catch (e) {
+    console.error("[signup] unexpected throw:", errorDetail(e));
+    return { error: `가입 중 예외 발생: ${errorDetail(e)}` };
+  }
 
   if (error) {
+    console.error("[signup] supabase auth error:", errorDetail(error));
     if (error.message.includes("already registered")) {
       return { error: "이미 가입된 이메일이에요." };
     }
-    return { error: `가입 중 오류가 발생했어요: ${error.message}` };
+    return {
+      error: `가입 중 오류가 발생했어요: ${error.message} — 상세: ${errorDetail(
+        error
+      )}`,
+    };
   }
   if (!data.user) {
     return { error: "가입 중 오류가 발생했어요. 다시 시도해주세요." };
