@@ -235,6 +235,7 @@ export default function LandingClient({ adminId }: { adminId: string }) {
                 placeholder="본문 내용 (타이틀/작성자/작성일은 자동으로 상단에 표시돼요)"
                 rows={10}
                 folder="landing/body"
+                showBannerButton
                 helpText="강조 박스로 보이게 하려면 그 줄 맨 앞에 !! 를 붙여주세요 (예: !! 놓치면 안 되는 포인트)."
               />
               <div className="flex flex-wrap items-center gap-4">

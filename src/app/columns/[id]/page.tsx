@@ -129,33 +129,39 @@ export default async function ColumnDetailPage({
   }
 
   if (isLanding) {
+    // 히든 랜딩페이지는 노션(Notion) 라이트 스타일 — 앱의 다른 페이지와 달리
+    // 이 화면만 흰 배경 + 어두운 글씨로 가독성을 최대화해요.
     return (
-      <main className="min-h-screen bg-[#05070d] pb-28">
-        <header className="flex items-center justify-center border-b border-[rgba(96,150,255,0.1)] px-4 py-3">
-          <span className="text-sm font-bold text-white">
-            임프로<span className="text-[#38bdf8]">트레이딩랩</span>
+      <main className="min-h-screen bg-white pb-28">
+        <header className="flex items-center justify-center border-b border-[#eeeeec] bg-white px-4 py-3">
+          <span className="text-sm font-bold text-[#111111]">
+            임프로<span className="text-[#2f6feb]">트레이딩랩</span>
           </span>
         </header>
         <article className="mx-auto max-w-md px-5 py-7">
-          <span className="mb-3 inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2.5 py-1 text-[11px] font-bold text-[#8fb3ff]">
+          <span className="mb-3 inline-block rounded-full bg-[#eef3fe] px-2.5 py-1 text-[11px] font-bold text-[#2f6feb]">
             {column.category}
           </span>
-          <h1 className="mb-3 text-2xl font-bold leading-snug text-white">
+          <h1 className="mb-3 text-2xl font-bold leading-snug text-[#111111]">
             {column.title}
           </h1>
-          <div className="mb-5 flex items-center gap-2 text-xs text-[#5f6b82]">
-            <span className="h-6 w-6 rounded-full bg-[#243352]" />
+          <div className="mb-6 flex items-center gap-2 text-xs text-[#787774]">
+            <span className="h-6 w-6 rounded-full bg-[#eeeeec]" />
             {authorNickname} · {dateLabel}
           </div>
           <SafeThumb
             src={column.cover_image_url}
-            className="mb-6 w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
+            className="mb-6 w-full rounded-xl border border-[#e9e9e7]"
           />
-          <RichContent content={column.content} />
+          <RichContent
+            content={column.content}
+            theme="light"
+            communityUrl={communityUrl}
+          />
         </article>
 
-        {/* 하단 고정 CTA 영역 */}
-        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[rgba(96,150,255,0.16)] bg-[#070b16]/97 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+        {/* 하단 고정 CTA 영역 — 흰 배경 위에서도 확실히 눈에 띄도록 계속 진한 톤 유지 */}
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[#eeeeec] bg-[#070b16]/97 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
           <div className="mx-auto flex max-w-md gap-2">
             <Link
               href="/columns"
@@ -169,7 +175,7 @@ export default async function ColumnDetailPage({
               rel="noopener noreferrer"
               className="flex-[1.4] rounded-xl bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] py-3 text-center text-sm font-bold text-[#04101f]"
             >
-              공식 소통방 입장하기 →
+              👉 🔥경제 노른자 소통방 입장하기→
             </a>
           </div>
         </div>

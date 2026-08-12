@@ -27,6 +27,7 @@ export function ContentEditor({
   rows = 8,
   folder = "content",
   helpText,
+  showBannerButton = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -35,6 +36,8 @@ export function ContentEditor({
   rows?: number;
   folder?: string;
   helpText?: string;
+  /** 본문 중간에 "[[banner]]" 소통방 홍보 배너를 삽입하는 버튼을 보여줄지 */
+  showBannerButton?: boolean;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -157,6 +160,11 @@ export function ContentEditor({
     e.target.value = "";
   }
 
+  function handleInsertBanner() {
+    const pos = textareaRef.current?.selectionStart ?? value.length;
+    onChange(insertAtPosition(value, pos, "[[banner]]"));
+  }
+
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-2">
@@ -184,6 +192,16 @@ export function ContentEditor({
         >
           📋 클립보드 붙여넣기
         </button>
+        {showBannerButton && (
+          <button
+            type="button"
+            onClick={handleInsertBanner}
+            disabled={busy}
+            className="rounded-lg border border-[rgba(232,185,75,0.4)] px-3 py-1.5 text-xs font-semibold text-[#f6d888] disabled:opacity-60"
+          >
+            📢 소통방 배너 삽입
+          </button>
+        )}
         {busy && (
           <span className="text-[11px] text-[#8fb3ff]">업로드 중...</span>
         )}
@@ -222,7 +240,10 @@ export function ContentEditor({
       <p className="text-[11px] leading-relaxed text-[#5f6b82]">
         💡 사진/동영상은 버튼으로 올리거나, 복사한 이미지를 본문에{" "}
         <b>붙여넣기(Ctrl+V)</b>하거나 파일을 <b>끌어다 놓아도</b> 자동으로
-        업로드되고 커서 위치에 들어가요.
+        업로드되고 커서 위치에 들어가요. <code>#</code>/<code>##</code>로
+        시작하는 줄은 제목, <code>&gt;</code>로 시작하는 줄은 인용구가 돼요.
+        {showBannerButton &&
+          " 커서를 원하는 위치에 두고 \"📢 소통방 배너 삽입\" 버튼을 누르면 그 자리에 홍보 배너가 들어가요."}
         {helpText ? ` ${helpText}` : ""}
       </p>
     </div>

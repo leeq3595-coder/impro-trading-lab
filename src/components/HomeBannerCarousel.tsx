@@ -65,6 +65,8 @@ export function HomeBannerCarousel({ urls }: { urls: Record<string, string> }) {
         "from-[#0e2318] to-[#123420] border-[rgba(74,222,128,0.25)]",
       url: urls.banner2_prop || "/signup",
       sideImage: "/prop-proof.png",
+      sideImageClass:
+        "absolute right-4 top-11 w-24 rounded-lg shadow-lg shadow-black/40 sm:w-28",
     },
     {
       key: "banner3_youtube",
