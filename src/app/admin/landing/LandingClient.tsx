@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
 import { MediaUploader } from "@/components/MediaUploader";
 
-type ColumnRow = {
+type LandingRow = {
   id: string;
   title: string;
   content: string;
@@ -21,16 +21,15 @@ type ColumnRow = {
 const EMPTY_FORM = {
   title: "",
   content: "",
-  category: "시황분석" as ColumnRow["category"],
+  category: "시황분석" as LandingRow["category"],
   is_vip: false,
   is_published: true,
-  is_hidden: false,
   cover_image_url: "",
 };
 
-export default function ColumnsClient({ adminId }: { adminId: string }) {
+export default function LandingClient({ adminId }: { adminId: string }) {
   const supabase = createClient();
-  const [rows, setRows] = useState<ColumnRow[]>([]);
+  const [rows, setRows] = useState<LandingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -39,9 +38,18 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [origin, setOrigin] = useState("");
 
-  async function copyLink(row: ColumnRow) {
-    const url = `${window.location.origin}/columns/${row.id}`;
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  function linkFor(row: LandingRow) {
+    return `${origin || (typeof window !== "undefined" ? window.location.origin : "")}/columns/${row.id}`;
+  }
+
+  async function copyLink(row: LandingRow) {
+    const url = linkFor(row);
     try {
       await navigator.clipboard.writeText(url);
       setCopiedId(row.id);
@@ -60,10 +68,10 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
         .select(
           "id,title,content,category,is_vip,is_published,is_hidden,cover_image_url,published_at"
         )
-        .eq("is_hidden", false)
+        .eq("is_hidden", true)
         .order("published_at", { ascending: false });
       if (error) throw error;
-      setRows((data as ColumnRow[]) ?? []);
+      setRows((data as LandingRow[]) ?? []);
     } catch (e) {
       setError(clientErrorMessage(e, "불러오기 실패"));
     } finally {
@@ -82,7 +90,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
     setFormOpen(true);
   }
 
-  function openEdit(row: ColumnRow) {
+  function openEdit(row: LandingRow) {
     setEditingId(row.id);
     setForm({
       title: row.title,
@@ -90,7 +98,6 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
       category: row.category,
       is_vip: row.is_vip,
       is_published: row.is_published,
-      is_hidden: row.is_hidden,
       cover_image_url: row.cover_image_url ?? "",
     });
     setFormOpen(true);
@@ -113,7 +120,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
             category: form.category,
             is_vip: form.is_vip,
             is_published: form.is_published,
-            is_hidden: form.is_hidden,
+            is_hidden: true,
             cover_image_url: form.cover_image_url.trim() || null,
             updated_at: new Date().toISOString(),
           })
@@ -126,7 +133,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
           category: form.category,
           is_vip: form.is_vip,
           is_published: form.is_published,
-          is_hidden: form.is_hidden,
+          is_hidden: true,
           cover_image_url: form.cover_image_url.trim() || null,
           author_id: adminId,
         });
@@ -143,28 +150,8 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
     }
   }
 
-  async function togglePublished(row: ColumnRow) {
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("columns")
-        .update({ is_published: !row.is_published })
-        .eq("id", row.id);
-      if (error) throw error;
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === row.id ? { ...r, is_published: !r.is_published } : r
-        )
-      );
-    } catch (e) {
-      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function remove(row: ColumnRow) {
-    const ok = window.confirm(`"${row.title}" 칼럼을 삭제할까요?`);
+  async function remove(row: LandingRow) {
+    const ok = window.confirm(`"${row.title}" 랜딩페이지를 삭제할까요?`);
     if (!ok) return;
     setSaving(true);
     try {
@@ -190,23 +177,28 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
           </Link>
           <button
             onClick={openCreate}
-            className="rounded-lg bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-4 py-2 text-sm font-bold text-[#04101f]"
+            className="rounded-lg bg-gradient-to-r from-[#f6d888] to-[#e8b94b] px-4 py-2 text-sm font-bold text-[#241a04]"
           >
-            + 새 칼럼 작성
+            + 새 랜딩페이지 작성
           </button>
         </div>
-        <h1 className="mb-1 mt-2 text-2xl font-bold text-white">칼럼 관리</h1>
-        <p className="mb-6 text-xs text-[#5f6b82]">
-          VIP 칼럼은 비로그인·비VIP 사용자에게 잠금 처리돼요. 비공개(비공개
-          상태)로 두면 앱에 노출되지 않아요.
+        <h1 className="mb-1 mt-2 text-2xl font-bold text-white">
+          🔗 히든 랜딩페이지 관리
+        </h1>
+        <p className="mb-6 text-xs leading-relaxed text-[#5f6b82]">
+          여기서 만든 글은 홈/칼럼 목록 어디에도 노출되지 않고, 아래 &quot;링크
+          복사&quot; 버튼으로 얻은 주소로만 들어올 수 있어요. 인스타 릴스 → DM
+          자동 연동 → 이 링크로 트래픽을 유입시키는 용도예요. 페이지 하단에는
+          &quot;다음 칼럼 읽기&quot; / &quot;공식 소통방 입장하기&quot; 고정
+          버튼이 자동으로 붙어요.
         </p>
 
         {error && <p className="mb-4 text-sm text-[#f87171]">{error}</p>}
 
         {formOpen && (
-          <div className="mb-6 rounded-2xl border border-[rgba(96,150,255,0.25)] bg-[#0b1120] p-5">
+          <div className="mb-6 rounded-2xl border border-[rgba(232,185,75,0.3)] bg-[#0b1120] p-5">
             <h2 className="mb-3 text-sm font-bold text-white">
-              {editingId ? "칼럼 수정" : "새 칼럼 작성"}
+              {editingId ? "랜딩페이지 수정" : "새 랜딩페이지 작성"}
             </h2>
             <div className="flex flex-col gap-3">
               <input
@@ -223,11 +215,11 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, cover_image_url: e.target.value }))
                   }
-                  placeholder="대표 이미지 URL (선택, 목록/카드에 표시돼요)"
+                  placeholder="대표 이미지 URL (선택)"
                   className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
                 />
                 <MediaUploader
-                  folder="columns/cover"
+                  folder="landing/cover"
                   label="대표 이미지 업로드"
                   accept="image/*"
                   onUploaded={(url) =>
@@ -240,13 +232,13 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, content: e.target.value }))
                 }
-                placeholder="본문 내용"
-                rows={8}
+                placeholder="본문 내용 (타이틀/작성자/작성일은 자동으로 상단에 표시돼요)"
+                rows={10}
                 className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
               />
               <div className="-mt-1 flex flex-wrap items-center gap-2">
                 <MediaUploader
-                  folder="columns/body"
+                  folder="landing/body"
                   label="본문에 사진 추가"
                   accept="image/*"
                   onUploaded={(url) =>
@@ -259,7 +251,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                   }
                 />
                 <MediaUploader
-                  folder="columns/body"
+                  folder="landing/body"
                   label="본문에 동영상 추가"
                   accept="video/*"
                   onUploaded={(url) =>
@@ -274,10 +266,9 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
               </div>
               <p className="-mt-1 text-[11px] leading-relaxed text-[#5f6b82]">
                 💡 위 버튼으로 사진/동영상을 올리면 본문 맨 아래에 자동으로
-                줄이 추가돼요. 원하는 위치로 그 줄을 잘라서 옮겨도 돼요.
-                유튜브 링크만 있는 줄도 자동으로 영상으로 바뀌어요. 강조
-                박스로 보이게 하려면 그 줄 맨 앞에 <code>!!</code>를 붙여주세요
-                (예: <code>!! 오늘 지지선은 여기예요</code>).
+                줄이 추가돼요. 원하는 위치로 잘라서 옮겨도 돼요. 강조 박스로
+                보이게 하려면 그 줄 맨 앞에 <code>!!</code>를 붙여주세요 (예:{" "}
+                <code>!! 놓치면 안 되는 포인트</code>).
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
@@ -287,7 +278,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                     onChange={(e) =>
                       setForm((f) => ({
                         ...f,
-                        category: e.target.value as ColumnRow["category"],
+                        category: e.target.value as LandingRow["category"],
                       }))
                     }
                     className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-2 py-1.5 text-sm text-white outline-none"
@@ -295,16 +286,6 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                     <option value="시황분석">시황분석</option>
                     <option value="종목분석">종목분석</option>
                   </select>
-                </label>
-                <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
-                  <input
-                    type="checkbox"
-                    checked={form.is_vip}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, is_vip: e.target.checked }))
-                    }
-                  />
-                  VIP 전용
                 </label>
                 <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
                   <input
@@ -317,21 +298,14 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                       }))
                     }
                   />
-                  즉시 공개
+                  즉시 공개 (꺼두면 링크로도 안 열려요)
                 </label>
               </div>
-              <p className="rounded-lg border border-[rgba(96,150,255,0.15)] bg-[rgba(96,150,255,0.04)] px-3 py-2 text-[11px] leading-relaxed text-[#5f6b82]">
-                💡 인스타 릴스용 히든 랜딩페이지는 여기가 아니라{" "}
-                <Link href="/admin/landing" className="font-semibold text-[#8fb3ff] underline">
-                  히든 랜딩페이지 관리
-                </Link>{" "}
-                메뉴에서 따로 만들어주세요.
-              </p>
               <div className="mt-1 flex gap-2">
                 <button
                   onClick={submit}
                   disabled={saving}
-                  className="rounded-lg bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-4 py-2 text-sm font-bold text-[#04101f] disabled:opacity-60"
+                  className="rounded-lg bg-gradient-to-r from-[#f6d888] to-[#e8b94b] px-4 py-2 text-sm font-bold text-[#241a04] disabled:opacity-60"
                 >
                   {saving ? "저장 중..." : editingId ? "수정 저장" : "등록"}
                 </button>
@@ -352,7 +326,8 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
         {loading && <p className="text-sm text-[#5f6b82]">불러오는 중...</p>}
         {!loading && rows.length === 0 && (
           <p className="text-sm text-[#5f6b82]">
-            아직 등록된 칼럼이 없어요. 위 버튼으로 첫 칼럼을 작성해보세요.
+            아직 등록된 랜딩페이지가 없어요. 위 버튼으로 첫 페이지를
+            작성해보세요.
           </p>
         )}
 
@@ -360,19 +335,17 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
           {rows.map((r) => (
             <div
               key={r.id}
-              className="rounded-2xl border border-[rgba(96,150,255,0.18)] bg-[#0b1120] p-4"
+              className="rounded-2xl border border-[rgba(232,185,75,0.25)] bg-[#0b1120] p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-[rgba(232,185,75,0.18)] px-2 py-0.5 text-[10px] font-bold text-[#f6d888]">
+                      🔗 히든 랜딩
+                    </span>
                     <span className="rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
                       {r.category}
                     </span>
-                    {r.is_vip && (
-                      <span className="rounded-full bg-gradient-to-r from-[#f6d888] to-[#e8b94b] px-2 py-0.5 text-[10px] font-bold text-[#241a04]">
-                        VIP
-                      </span>
-                    )}
                     {!r.is_published && (
                       <span className="rounded-full bg-[rgba(255,255,255,0.08)] px-2 py-0.5 text-[10px] font-bold text-[#5f6b82]">
                         비공개
@@ -382,33 +355,23 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                   <div className="mt-1 truncate font-bold text-white">
                     {r.title}
                   </div>
-                  <div className="mt-1 text-xs text-[#5f6b82]">
-                    {new Date(r.published_at)
-                      .toISOString()
-                      .slice(0, 10)
-                      .replace(/-/g, ".")}
+                  <div className="mt-1 truncate text-xs text-[#5f6b82]">
+                    {linkFor(r)}
                   </div>
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
-                  onClick={() => openEdit(r)}
-                  className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8]"
-                >
-                  수정
-                </button>
-                <button
                   onClick={() => copyLink(r)}
-                  className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8]"
+                  className="rounded-lg bg-[rgba(232,185,75,0.14)] px-3 py-1.5 text-xs font-bold text-[#f6d888]"
                 >
                   {copiedId === r.id ? "✓ 복사됨" : "🔗 링크 복사"}
                 </button>
                 <button
-                  onClick={() => togglePublished(r)}
-                  disabled={saving}
-                  className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8] disabled:opacity-60"
+                  onClick={() => openEdit(r)}
+                  className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8]"
                 >
-                  {r.is_published ? "비공개로 전환" : "공개로 전환"}
+                  수정
                 </button>
                 <button
                   onClick={() => remove(r)}

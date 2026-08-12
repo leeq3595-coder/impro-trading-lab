@@ -5,6 +5,7 @@ import { logout } from "@/app/login/actions";
 const MENU = [
   { href: "/admin/vip", label: "회원 VIP 업그레이드", ready: true, desc: "회원 검색, 올림프트레이드 UID 확인, VIP 전환" },
   { href: "/admin/columns", label: "칼럼 관리", ready: true, desc: "칼럼 작성 · 수정 · VIP 설정 · 공개/비공개" },
+  { href: "/admin/landing", label: "🔗 히든 랜딩페이지 관리", ready: true, desc: "인스타 릴스용 히든 페이지 작성 · 링크 복사 · 수정/삭제" },
   { href: "/admin/community", label: "커뮤니티 관리", ready: true, desc: "수익인증 · 매매법공유 등록/삭제" },
   { href: "/admin/materials", label: "자료실 관리", ready: true, desc: "문서 · 영상 링크 등록/수정/삭제" },
   { href: "/admin/notices", label: "공지사항 관리", ready: true, desc: "작성 · 상단고정 · 수정" },

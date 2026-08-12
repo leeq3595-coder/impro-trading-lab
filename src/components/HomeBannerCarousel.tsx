@@ -15,7 +15,7 @@ type Slide = {
   proofImage?: string;
 };
 
-const AUTOPLAY_MS = 4500;
+const AUTOPLAY_MS = 4000;
 
 export function HomeBannerCarousel({ urls }: { urls: Record<string, string> }) {
   const slides: Slide[] = [

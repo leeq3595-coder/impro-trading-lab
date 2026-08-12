@@ -2,6 +2,7 @@
 // "유튜브 링크만 있는 줄"을 만나면 자동으로 이미지/영상으로 렌더링해요.
 // 파일 업로드 서버가 없어도 본문 중간에 사진/영상을 넣을 수 있게 하는 간단한 방법이에요.
 const IMAGE_RE = /^https?:\/\/\S+\.(?:png|jpe?g|gif|webp|avif)(?:\?\S*)?$/i;
+const VIDEO_RE = /^https?:\/\/\S+\.(?:mp4|webm|mov|m4v)(?:\?\S*)?$/i;
 const YOUTUBE_RE =
   /^https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/i;
 // "!! " 로 시작하는 줄(연속되면 하나로 묶임)은 노션 콜아웃처럼 강조 박스로 렌더링돼요.
@@ -10,6 +11,7 @@ const CALLOUT_PREFIX = /^!!\s?/;
 type Block =
   | { type: "text"; text: string }
   | { type: "image"; url: string }
+  | { type: "video"; url: string }
   | { type: "youtube"; id: string }
   | { type: "callout"; text: string };
 
@@ -44,6 +46,9 @@ function parseBlocks(content: string): Block[] {
     if (line && IMAGE_RE.test(line)) {
       flushText();
       blocks.push({ type: "image", url: line });
+    } else if (line && VIDEO_RE.test(line)) {
+      flushText();
+      blocks.push({ type: "video", url: line });
     } else if (line && ytMatch) {
       flushText();
       blocks.push({ type: "youtube", id: ytMatch[1] });
@@ -69,6 +74,17 @@ export function RichContent({ content }: { content: string }) {
               src={b.url}
               alt=""
               loading="lazy"
+              className="w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
+            />
+          );
+        }
+        if (b.type === "video") {
+          return (
+            <video
+              key={i}
+              src={b.url}
+              controls
+              playsInline
               className="w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
             />
           );
