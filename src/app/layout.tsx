@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthGateProvider } from "@/components/AuthGateProvider";
 
 export const metadata: Metadata = {
   title: "임프로 트레이딩랩",
@@ -9,7 +10,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#05070d]">
+        <AuthGateProvider>{children}</AuthGateProvider>
+      </body>
     </html>
   );
 }
