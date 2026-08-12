@@ -40,6 +40,16 @@ export default function LoginPage() {
           </button>
         </form>
 
+        <div className="mt-4 flex justify-center gap-3 text-xs text-[#5f6b82]">
+          <Link href="/find-email" className="underline">
+            아이디 찾기
+          </Link>
+          <span>·</span>
+          <Link href="/reset-password" className="underline">
+            비밀번호 찾기
+          </Link>
+        </div>
+
         <p className="mt-6 text-sm text-[#93a0b8]">
           아직 계정이 없으신가요?{" "}
           <Link href="/signup" className="text-[#38bdf8] font-semibold">

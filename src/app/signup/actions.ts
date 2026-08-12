@@ -5,7 +5,7 @@ import { errorDetail } from "@/lib/errorDetail";
 
 export type SignupState =
   | { error: string }
-  | { ok: true; userId: string; needsEmailConfirm: boolean }
+  | { ok: true; userId: string }
   | undefined;
 
 export async function createAccount(
@@ -42,8 +42,18 @@ export async function createAccount(
 
   if (error) {
     console.error("[signup] supabase auth error:", errorDetail(error));
-    if (error.message.includes("already registered")) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("already registered") || msg.includes("already exists")) {
       return { error: "이미 가입된 이메일이에요." };
+    }
+    if (msg.includes("rate limit")) {
+      // 이미 가입(미인증) 상태인 이메일로 다시 가입하면 Supabase가 인증 메일을
+      // 재발송하려다 무료 요금제 메일 발송 제한에 걸려요 — 결과적으로 "이미 가입된 이메일"인
+      // 경우가 대부분이라 이렇게 안내해요.
+      return {
+        error:
+          "이미 가입된 이메일이에요 (또는 인증 메일을 너무 자주 요청했어요). 잠시 후 다시 시도하거나 로그인을 이용해주세요.",
+      };
     }
     return {
       error: `가입 중 오류가 발생했어요: ${error.message} — 상세: ${errorDetail(
@@ -55,6 +65,14 @@ export async function createAccount(
     return { error: "가입 중 오류가 발생했어요. 다시 시도해주세요." };
   }
 
-  // Supabase 프로젝트의 "Confirm email" 설정이 켜져 있으면 session이 없어요(이메일 인증 필요)
-  return { ok: true, userId: data.user.id, needsEmailConfirm: !data.session };
+  // 이미 가입(이메일 인증 완료)된 계정으로 재가입 시도하면 Supabase는 에러 대신
+  // "성공"처럼 응답하되 identities를 빈 배열로 줘요 (이메일 존재 여부 추측 방지용 보안 설계).
+  // 이 경우도 "이미 가입된 이메일"로 안내해줘야 해요.
+  if (data.user.identities && data.user.identities.length === 0) {
+    return { error: "이미 가입된 이메일이에요." };
+  }
+
+  // Supabase 대시보드에서 "Confirm email"을 꺼뒀기 때문에 이메일 인증 없이 바로 가입 완료돼요.
+  // (휴대폰 인증이 실제 본인확인 역할을 해요)
+  return { ok: true, userId: data.user.id };
 }

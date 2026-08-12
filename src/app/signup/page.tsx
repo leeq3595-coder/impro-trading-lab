@@ -9,7 +9,6 @@ type Step = 1 | 2 | 3;
 export default function SignupPage() {
   const [step, setStep] = useState<Step>(1);
   const [userId, setUserId] = useState<string | null>(null);
-  const [needsEmailConfirm, setNeedsEmailConfirm] = useState(false);
 
   const [accountState, accountAction, accountPending] = useActionState(
     createAccount,
@@ -19,7 +18,6 @@ export default function SignupPage() {
   // step1 성공 시 다음 단계로
   if (accountState && "ok" in accountState && step === 1) {
     setUserId(accountState.userId);
-    setNeedsEmailConfirm(accountState.needsEmailConfirm);
     setStep(2);
   }
 
@@ -69,14 +67,10 @@ export default function SignupPage() {
         )}
 
         {step === 2 && userId && (
-          <PhoneStep
-            userId={userId}
-            needsEmailConfirm={needsEmailConfirm}
-            onDone={() => setStep(3)}
-          />
+          <PhoneStep userId={userId} onDone={() => setStep(3)} />
         )}
 
-        {step === 3 && <DoneStep needsEmailConfirm={needsEmailConfirm} />}
+        {step === 3 && <DoneStep />}
 
         {step === 1 && (
           <p className="mt-6 text-sm text-[#93a0b8]">
@@ -93,11 +87,9 @@ export default function SignupPage() {
 
 function PhoneStep({
   userId,
-  needsEmailConfirm,
   onDone,
 }: {
   userId: string;
-  needsEmailConfirm: boolean;
   onDone: () => void;
 }) {
   const [phone, setPhone] = useState("");
@@ -114,7 +106,7 @@ function PhoneStep({
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, userId }),
+        body: JSON.stringify({ phone, userId, purpose: "signup" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "발송 실패");
@@ -134,7 +126,7 @@ function PhoneStep({
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, code, userId }),
+        body: JSON.stringify({ phone, code, userId, purpose: "signup" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "인증 실패");
@@ -148,12 +140,9 @@ function PhoneStep({
 
   return (
     <div className="flex flex-col gap-3">
-      {needsEmailConfirm && (
-        <p className="text-xs text-[#f6d888] bg-[rgba(232,185,75,0.08)] border border-[rgba(232,185,75,0.3)] rounded-lg px-3 py-2">
-          가입하신 이메일로 확인 메일이 발송됐어요. 링크를 눌러 이메일 인증을
-          먼저 완료해주세요 (휴대폰 인증은 지금 계속하셔도 돼요).
-        </p>
-      )}
+      <p className="text-xs text-[#93a0b8]">
+        이 번호가 아이디 찾기/비밀번호 재설정에 쓰이니 정확히 입력해주세요.
+      </p>
       <input
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
@@ -196,7 +185,7 @@ function PhoneStep({
   );
 }
 
-function DoneStep({ needsEmailConfirm }: { needsEmailConfirm: boolean }) {
+function DoneStep() {
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-2xl border border-[rgba(232,185,75,0.45)] bg-[rgba(232,185,75,0.06)] p-4 text-sm text-[#f3f5f9] leading-relaxed">
@@ -204,11 +193,6 @@ function DoneStep({ needsEmailConfirm }: { needsEmailConfirm: boolean }) {
         관리자 확인 후 계정이 자동으로 VIP로 전환돼요. VIP 시그널, 커뮤니티,
         VIP 교재, VIP 칼럼까지 모두 제공됩니다.
       </div>
-      {needsEmailConfirm && (
-        <p className="text-xs text-[#93a0b8]">
-          로그인 전에 이메일함에서 인증 링크를 먼저 눌러주세요.
-        </p>
-      )}
       <Link
         href="/login"
         className="text-center rounded-xl bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] py-3 font-bold text-[#04101f]"
