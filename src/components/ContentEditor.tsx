@@ -165,6 +165,57 @@ export function ContentEditor({
     onChange(insertAtPosition(value, pos, "[[banner]]"));
   }
 
+  // 드래그(또는 클릭)로 선택한 글자를 **굵게**로 감싸요. 이미 굵게 처리된
+  // 부분을 다시 선택해서 누르면 반대로 풀려요(토글). 아무것도 선택 안 했으면
+  // 커서 위치에 ** ** 를 넣고 그 가운데에 커서를 둬서 바로 타이핑할 수 있게 해요.
+  function handleBold() {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = value.slice(start, end);
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+
+    const alreadyWrapped =
+      selected.length > 0 &&
+      before.endsWith("**") &&
+      after.startsWith("**");
+
+    let nextValue: string;
+    let nextStart: number;
+    let nextEnd: number;
+
+    if (alreadyWrapped) {
+      // 앞뒤의 ** 를 벗겨내요 (토글: 굵게 해제)
+      nextValue = before.slice(0, -2) + selected + after.slice(2);
+      nextStart = start - 2;
+      nextEnd = end - 2;
+    } else if (selected.length > 0) {
+      nextValue = `${before}**${selected}**${after}`;
+      nextStart = start + 2;
+      nextEnd = end + 2;
+    } else {
+      nextValue = `${before}****${after}`;
+      nextStart = start + 2;
+      nextEnd = start + 2;
+    }
+
+    onChange(nextValue);
+    // 컨트롤드 textarea라 value가 리렌더된 다음에 커서를 옮겨야 해요.
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(nextStart, nextEnd);
+    }, 0);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+      e.preventDefault();
+      handleBold();
+    }
+  }
+
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-2">
@@ -191,6 +242,15 @@ export function ContentEditor({
           className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8] disabled:opacity-60"
         >
           📋 클립보드 붙여넣기
+        </button>
+        <button
+          type="button"
+          onClick={handleBold}
+          disabled={busy}
+          title="선택한 글자를 굵게 (Ctrl/Cmd+B)"
+          className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-bold text-[#93a0b8] disabled:opacity-60"
+        >
+          B 굵게
         </button>
         {showBannerButton && (
           <button
@@ -231,6 +291,7 @@ export function ContentEditor({
         onPaste={handlePaste}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         rows={rows}
         readOnly={busy}
@@ -242,6 +303,8 @@ export function ContentEditor({
         <b>붙여넣기(Ctrl+V)</b>하거나 파일을 <b>끌어다 놓아도</b> 자동으로
         업로드되고 커서 위치에 들어가요. <code>#</code>/<code>##</code>로
         시작하는 줄은 제목, <code>&gt;</code>로 시작하는 줄은 인용구가 돼요.
+        굵게 하고 싶은 부분은 드래그해서 선택한 다음 <b>&quot;B 굵게&quot;</b>{" "}
+        버튼(또는 Ctrl/Cmd+B)을 누르면 돼요.
         {showBannerButton &&
           " 커서를 원하는 위치에 두고 \"📢 소통방 배너 삽입\" 버튼을 누르면 그 자리에 홍보 배너가 들어가요."}
         {helpText ? ` ${helpText}` : ""}

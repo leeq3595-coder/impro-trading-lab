@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
+import { MediaUploader } from "@/components/MediaUploader";
+import { ContentEditor } from "@/components/ContentEditor";
+import { BoldTextarea } from "@/components/BoldTextarea";
 
 type PostRow = {
   id: string;
@@ -283,26 +286,38 @@ export default function CommunityAdminClient({
                   placeholder="매매 횟수 (선택)"
                   className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
                 />
-                <input
-                  value={form.screenshot_url}
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      screenshot_url: e.target.value,
-                    }))
-                  }
-                  placeholder="인증 스크린샷 URL (선택)"
-                  className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
-                />
-                <textarea
+                <div className="flex flex-col gap-2">
+                  <input
+                    value={form.screenshot_url}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        screenshot_url: e.target.value,
+                      }))
+                    }
+                    placeholder="인증 스크린샷 URL (선택, 아래 버튼으로 올리면 자동으로 채워져요)"
+                    className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
+                  />
+                  <MediaUploader
+                    folder="community/screenshot"
+                    label="스크린샷 업로드"
+                    accept="image/*"
+                    showCamera
+                    onUploaded={(url) =>
+                      setForm((f) => ({ ...f, screenshot_url: url }))
+                    }
+                  />
+                </div>
+                <BoldTextarea
                   value={form.content}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, content: e.target.value }))
-                  }
+                  onChange={(v) => setForm((f) => ({ ...f, content: v }))}
                   placeholder="한줄 소감 (선택)"
                   rows={3}
-                  className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
                 />
+                <p className="text-[11px] leading-relaxed text-[#5f6b82]">
+                  💡 굵게 하고 싶은 부분을 드래그해서 선택한 다음{" "}
+                  <b>&quot;B 굵게&quot;</b> 버튼을 누르면 굵은 글씨로 바뀌어요.
+                </p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -314,14 +329,12 @@ export default function CommunityAdminClient({
                   placeholder="제목"
                   className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
                 />
-                <textarea
+                <ContentEditor
                   value={form.content}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, content: e.target.value }))
-                  }
+                  onChange={(v) => setForm((f) => ({ ...f, content: v }))}
                   placeholder="매매법 내용"
                   rows={6}
-                  className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
+                  folder="community/body"
                 />
               </div>
             )}
