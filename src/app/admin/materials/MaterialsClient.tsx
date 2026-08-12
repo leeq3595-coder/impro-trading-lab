@@ -13,6 +13,7 @@ type MaterialRow = {
   file_url: string | null;
   video_url: string | null;
   is_vip: boolean;
+  is_pinned: boolean;
   created_at: string;
 };
 
@@ -43,8 +44,9 @@ export default function MaterialsClient() {
       const { data, error } = await supabase
         .from("materials")
         .select(
-          "id,title,category,description,file_url,video_url,is_vip,created_at"
+          "id,title,category,description,file_url,video_url,is_vip,is_pinned,created_at"
         )
+        .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
       if (error) throw error;
       setRows((data as MaterialRow[]) ?? []);
@@ -112,6 +114,22 @@ export default function MaterialsClient() {
       setFormOpen(false);
       setForm(EMPTY_FORM);
       setEditingId(null);
+      await load();
+    } catch (e) {
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function togglePinned(row: MaterialRow) {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("materials")
+        .update({ is_pinned: !row.is_pinned })
+        .eq("id", row.id);
+      if (error) throw error;
       await load();
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
@@ -264,6 +282,11 @@ export default function MaterialsClient() {
               className="rounded-2xl border border-[rgba(96,150,255,0.18)] bg-[#0b1120] p-4"
             >
               <div className="flex flex-wrap items-center gap-2">
+                {r.is_pinned && (
+                  <span className="rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                    📌 상단 고정
+                  </span>
+                )}
                 <span className="rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
                   {r.category}
                 </span>
@@ -287,6 +310,13 @@ export default function MaterialsClient() {
                   className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8]"
                 >
                   수정
+                </button>
+                <button
+                  onClick={() => togglePinned(r)}
+                  disabled={saving}
+                  className="rounded-lg border border-[rgba(248,113,113,0.35)] px-3 py-1.5 text-xs font-semibold text-[#f87171] disabled:opacity-60"
+                >
+                  {r.is_pinned ? "📌 고정 해제" : "📌 상단 고정"}
                 </button>
                 <button
                   onClick={() => remove(r)}

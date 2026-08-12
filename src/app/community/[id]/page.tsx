@@ -24,7 +24,7 @@ export default async function CommunityDetailPage({
   const { data: post } = await supabase
     .from("community_posts")
     .select(
-      "id,post_type,author_id,title,content,symbol,trade_count,seed_amount,profit_amount,profit_rate,screenshot_url,likes_count,comments_count,created_at"
+      "id,post_type,author_id,title,content,symbol,trade_count,seed_amount,profit_amount,profit_rate,screenshot_url,likes_count,likes_boost,comments_count,is_pinned,created_at"
     )
     .eq("id", id)
     .maybeSingle();
@@ -123,15 +123,22 @@ export default async function CommunityDetailPage({
         </Link>
       </header>
       <article className="mx-auto max-w-md px-4 pb-6 pt-[68px]">
-        <span
-          className={`mb-3 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-            post.post_type === "profit_proof"
-              ? "bg-[rgba(232,120,75,0.16)] text-[#f6a97e]"
-              : "bg-[rgba(96,150,255,0.16)] text-[#8fb3ff]"
-          }`}
-        >
-          {post.post_type === "profit_proof" ? "🔥 수익인증" : "📘 매매법공유"}
-        </span>
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          {post.is_pinned && (
+            <span className="inline-block rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+              📌 고정
+            </span>
+          )}
+          <span
+            className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              post.post_type === "profit_proof"
+                ? "bg-[rgba(232,120,75,0.16)] text-[#f6a97e]"
+                : "bg-[rgba(96,150,255,0.16)] text-[#8fb3ff]"
+            }`}
+          >
+            {post.post_type === "profit_proof" ? "🔥 수익인증" : "📘 매매법공유"}
+          </span>
+        </div>
         <div className="mb-4 flex items-center gap-2">
           <span className="h-8 w-8 rounded-full bg-[#243352]" />
           <div>
@@ -173,7 +180,7 @@ export default async function CommunityDetailPage({
             postId={post.id}
             userId={profile?.id ?? null}
             initialLiked={liked}
-            initialCount={post.likes_count}
+            initialCount={post.likes_count + (post.likes_boost ?? 0)}
           />
           <span className="text-sm text-[#93a0b8]">💬 {post.comments_count}</span>
         </div>

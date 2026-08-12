@@ -12,6 +12,7 @@ type ColumnRow = {
   title: string;
   category: string;
   is_vip: boolean;
+  is_pinned: boolean;
   author_id: string;
   cover_image_url: string | null;
   published_at: string;
@@ -36,9 +37,12 @@ export default async function ColumnsPage() {
 
   const { data: columns } = await supabase
     .from("columns")
-    .select("id,title,category,is_vip,author_id,cover_image_url,published_at")
+    .select(
+      "id,title,category,is_vip,is_pinned,author_id,cover_image_url,published_at"
+    )
     .eq("is_published", true)
     .eq("is_hidden", false)
+    .order("is_pinned", { ascending: false })
     .order("published_at", { ascending: false })
     .returns<ColumnRow[]>();
 
@@ -78,9 +82,16 @@ export default async function ColumnsPage() {
                   🔒
                 </span>
                 <div className="min-w-0 flex-1">
-                  <span className="mb-1 inline-block rounded-full bg-[rgba(232,185,75,0.18)] px-2 py-0.5 text-[10px] font-bold text-[#f6d888]">
-                    VIP 전용
-                  </span>
+                  <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                    {c.is_pinned && (
+                      <span className="rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                        📌 고정
+                      </span>
+                    )}
+                    <span className="inline-block rounded-full bg-[rgba(232,185,75,0.18)] px-2 py-0.5 text-[10px] font-bold text-[#f6d888]">
+                      VIP 전용
+                    </span>
+                  </div>
                   <div className="truncate text-sm font-bold text-white">
                     {c.title}
                   </div>
@@ -102,9 +113,16 @@ export default async function ColumnsPage() {
                   fallbackEmoji="📊"
                 />
                 <div className="min-w-0 flex-1">
-                  <span className="mb-1 inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
-                    {c.category}
-                  </span>
+                  <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                    {c.is_pinned && (
+                      <span className="rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                        📌 고정
+                      </span>
+                    )}
+                    <span className="inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
+                      {c.category}
+                    </span>
+                  </div>
                   <div className="truncate text-sm font-bold text-white">
                     {c.title}
                   </div>

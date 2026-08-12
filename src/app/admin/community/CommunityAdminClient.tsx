@@ -18,7 +18,9 @@ type PostRow = {
   profit_rate: number | null;
   screenshot_url: string | null;
   likes_count: number;
+  likes_boost: number;
   comments_count: number;
+  is_pinned: boolean;
   created_at: string;
 };
 
@@ -47,6 +49,7 @@ export default function CommunityAdminClient({
   const [saving, setSaving] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [boostDrafts, setBoostDrafts] = useState<Record<string, string>>({});
 
   async function load() {
     setLoading(true);
@@ -55,8 +58,9 @@ export default function CommunityAdminClient({
       const { data, error } = await supabase
         .from("community_posts")
         .select(
-          "id,post_type,author_id,title,content,symbol,trade_count,seed_amount,profit_amount,profit_rate,screenshot_url,likes_count,comments_count,created_at"
+          "id,post_type,author_id,title,content,symbol,trade_count,seed_amount,profit_amount,profit_rate,screenshot_url,likes_count,likes_boost,comments_count,is_pinned,created_at"
         )
+        .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
       if (error) throw error;
       setRows((data as PostRow[]) ?? []);
@@ -117,6 +121,51 @@ export default function CommunityAdminClient({
     }
   }
 
+  async function togglePinned(row: PostRow) {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("community_posts")
+        .update({ is_pinned: !row.is_pinned })
+        .eq("id", row.id);
+      if (error) throw error;
+      await load();
+    } catch (e) {
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // 실제 좋아요(likes 테이블) 값은 그대로 두고, 화면에 노출되는 숫자에
+  // 더해질 "보정값"만 관리자가 따로 입력해서 저장해요.
+  async function saveBoost(row: PostRow) {
+    const draft = boostDrafts[row.id];
+    if (draft === undefined) return;
+    const value = Math.max(0, Number(draft) || 0);
+    setSaving(true);
+    setError(null);
+    try {
+      const { error } = await supabase
+        .from("community_posts")
+        .update({ likes_boost: value })
+        .eq("id", row.id);
+      if (error) throw error;
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, likes_boost: value } : r))
+      );
+      setBoostDrafts((prev) => {
+        const next = { ...prev };
+        delete next[row.id];
+        return next;
+      });
+    } catch (e) {
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function remove(row: PostRow) {
     const ok = window.confirm("이 게시글을 삭제할까요?");
     if (!ok) return;
@@ -155,9 +204,10 @@ export default function CommunityAdminClient({
         <h1 className="mb-1 mt-2 text-2xl font-bold text-white">
           커뮤니티 관리 (수익인증 · 매매법공유)
         </h1>
-        <p className="mb-6 text-xs text-[#5f6b82]">
+        <p className="mb-6 text-xs leading-relaxed text-[#5f6b82]">
           관리자 계정({adminNickname}) 이름으로 등록돼요. 초기 콘텐츠 확보용
-          기능이에요.
+          기능이에요. 각 게시글의 &quot;보정값&quot;은 실제 좋아요 수에
+          더해져서 화면에 노출돼요 (실제 좋아요 기능은 그대로 유지돼요).
         </p>
 
         {error && <p className="mb-4 text-sm text-[#f87171]">{error}</p>}
@@ -307,15 +357,22 @@ export default function CommunityAdminClient({
               key={r.id}
               className="rounded-2xl border border-[rgba(96,150,255,0.18)] bg-[#0b1120] p-4"
             >
-              <span
-                className={`mb-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                  r.post_type === "profit_proof"
-                    ? "bg-[rgba(232,120,75,0.16)] text-[#f6a97e]"
-                    : "bg-[rgba(96,150,255,0.16)] text-[#8fb3ff]"
-                }`}
-              >
-                {r.post_type === "profit_proof" ? "🔥 수익인증" : "📘 매매법공유"}
-              </span>
+              <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                {r.is_pinned && (
+                  <span className="inline-block rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                    📌 상단 고정
+                  </span>
+                )}
+                <span
+                  className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    r.post_type === "profit_proof"
+                      ? "bg-[rgba(232,120,75,0.16)] text-[#f6a97e]"
+                      : "bg-[rgba(96,150,255,0.16)] text-[#8fb3ff]"
+                  }`}
+                >
+                  {r.post_type === "profit_proof" ? "🔥 수익인증" : "📘 매매법공유"}
+                </span>
+              </div>
               {r.post_type === "profit_proof" ? (
                 <div className="font-bold text-white">
                   {r.symbol} · +{r.profit_rate ?? 0}% ({r.trade_count ?? 0}회)
@@ -330,13 +387,45 @@ export default function CommunityAdminClient({
                   {r.content}
                 </p>
               )}
-              <div className="mt-3">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => togglePinned(r)}
+                  disabled={saving}
+                  className="rounded-lg border border-[rgba(248,113,113,0.35)] px-3 py-1.5 text-xs font-semibold text-[#f87171] disabled:opacity-60"
+                >
+                  {r.is_pinned ? "📌 고정 해제" : "📌 상단 고정"}
+                </button>
                 <button
                   onClick={() => remove(r)}
                   disabled={saving}
                   className="rounded-lg px-3 py-1.5 text-xs font-semibold text-[#f87171] underline disabled:opacity-60"
                 >
                   삭제
+                </button>
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-xs text-[#93a0b8]">
+                <span>
+                  ❤️ 실제 {r.likes_count} + 보정 {r.likes_boost} = 노출{" "}
+                  {r.likes_count + r.likes_boost}
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={boostDrafts[r.id] ?? r.likes_boost}
+                  onChange={(e) =>
+                    setBoostDrafts((prev) => ({
+                      ...prev,
+                      [r.id]: e.target.value,
+                    }))
+                  }
+                  className="w-20 rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-2 py-1 text-xs text-white outline-none focus:border-[#3b82f6]"
+                />
+                <button
+                  onClick={() => saveBoost(r)}
+                  disabled={saving}
+                  className="rounded-lg bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-3 py-1 text-[11px] font-bold text-[#04101f] disabled:opacity-60"
+                >
+                  보정값 저장
                 </button>
               </div>
             </div>

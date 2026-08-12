@@ -15,6 +15,7 @@ type ColumnRow = {
   is_vip: boolean;
   is_published: boolean;
   is_hidden: boolean;
+  is_pinned: boolean;
   cover_image_url: string | null;
   published_at: string;
   likes_count: number;
@@ -61,9 +62,10 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
       const { data, error } = await supabase
         .from("columns")
         .select(
-          "id,title,content,category,is_vip,is_published,is_hidden,cover_image_url,published_at,likes_count"
+          "id,title,content,category,is_vip,is_published,is_hidden,is_pinned,cover_image_url,published_at,likes_count"
         )
         .eq("is_hidden", false)
+        .order("is_pinned", { ascending: false })
         .order("published_at", { ascending: false });
       if (error) throw error;
       setRows((data as ColumnRow[]) ?? []);
@@ -162,6 +164,22 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
           r.id === row.id ? { ...r, is_published: !r.is_published } : r
         )
       );
+    } catch (e) {
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function togglePinned(row: ColumnRow) {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("columns")
+        .update({ is_pinned: !row.is_pinned })
+        .eq("id", row.id);
+      if (error) throw error;
+      await load();
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
@@ -351,6 +369,11 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
+                    {r.is_pinned && (
+                      <span className="rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                        📌 상단 고정
+                      </span>
+                    )}
                     <span className="rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
                       {r.category}
                     </span>
@@ -389,6 +412,13 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                   className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8]"
                 >
                   {copiedId === r.id ? "✓ 복사됨" : "🔗 링크 복사"}
+                </button>
+                <button
+                  onClick={() => togglePinned(r)}
+                  disabled={saving}
+                  className="rounded-lg border border-[rgba(248,113,113,0.35)] px-3 py-1.5 text-xs font-semibold text-[#f87171] disabled:opacity-60"
+                >
+                  {r.is_pinned ? "📌 고정 해제" : "📌 상단 고정"}
                 </button>
                 <button
                   onClick={() => togglePublished(r)}

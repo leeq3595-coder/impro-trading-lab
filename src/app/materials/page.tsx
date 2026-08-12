@@ -13,6 +13,7 @@ type MaterialRow = {
   description: string | null;
   file_url: string | null;
   is_vip: boolean;
+  is_pinned: boolean;
   created_at: string;
 };
 
@@ -53,7 +54,10 @@ export default async function MaterialsPage() {
   const supabase = await createClient();
   const { data: materials } = await supabase
     .from("materials")
-    .select("id,title,category,description,file_url,is_vip,created_at")
+    .select(
+      "id,title,category,description,file_url,is_vip,is_pinned,created_at"
+    )
+    .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false })
     .returns<MaterialRow[]>();
 
@@ -78,6 +82,11 @@ export default async function MaterialsPage() {
                   {m.is_vip ? "🔒" : "📄"}
                 </span>
                 <div className="min-w-0 flex-1">
+                  {m.is_pinned && (
+                    <span className="mb-0.5 mr-1 inline-block rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                      📌 고정
+                    </span>
+                  )}
                   <div className="truncate text-sm font-bold text-white">
                     {m.title}
                   </div>

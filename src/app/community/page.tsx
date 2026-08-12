@@ -14,7 +14,9 @@ type PostRow = {
   screenshot_url: string | null;
   profit_rate: number | null;
   likes_count: number;
+  likes_boost: number;
   comments_count: number;
+  is_pinned: boolean;
   created_at: string;
 };
 
@@ -38,9 +40,10 @@ export default async function CommunityPage() {
   const { data: profitRows } = await supabase
     .from("community_posts")
     .select(
-      "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,comments_count,created_at"
+      "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,likes_boost,comments_count,is_pinned,created_at"
     )
     .eq("post_type", "profit_proof")
+    .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false })
     .returns<PostRow[]>();
 
@@ -49,9 +52,10 @@ export default async function CommunityPage() {
     const { data } = await supabase
       .from("community_posts")
       .select(
-        "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,comments_count,created_at"
+        "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,likes_boost,comments_count,is_pinned,created_at"
       )
       .eq("post_type", "strategy_share")
+      .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
       .returns<PostRow[]>();
     strategyRows = data ?? [];
@@ -80,8 +84,9 @@ export default async function CommunityPage() {
       content: p.content,
       screenshot_url: p.screenshot_url,
       profit_rate: p.profit_rate,
-      likes_count: p.likes_count,
+      likes_count: p.likes_count + (p.likes_boost ?? 0),
       comments_count: p.comments_count,
+      is_pinned: p.is_pinned,
       timeLabel: timeAgo(p.created_at),
     };
   }

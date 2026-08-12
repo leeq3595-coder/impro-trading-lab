@@ -13,6 +13,7 @@ export type CommunityPostCard = {
   profit_rate: number | null;
   likes_count: number;
   comments_count: number;
+  is_pinned: boolean;
   timeLabel: string;
 };
 
@@ -110,15 +111,22 @@ export function CommunityTabs({
             href={`/community/${p.id}`}
             className="block rounded-2xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-4"
           >
-            <span
-              className={`mb-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                p.post_type === "profit_proof"
-                  ? "bg-[rgba(232,120,75,0.16)] text-[#f6a97e]"
-                  : "bg-[rgba(96,150,255,0.16)] text-[#8fb3ff]"
-              }`}
-            >
-              {p.post_type === "profit_proof" ? "🔥 수익인증" : "📘 매매법공유"}
-            </span>
+            <div className="mb-2 flex flex-wrap items-center gap-1.5">
+              {p.is_pinned && (
+                <span className="inline-block rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                  📌 고정
+                </span>
+              )}
+              <span
+                className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  p.post_type === "profit_proof"
+                    ? "bg-[rgba(232,120,75,0.16)] text-[#f6a97e]"
+                    : "bg-[rgba(96,150,255,0.16)] text-[#8fb3ff]"
+                }`}
+              >
+                {p.post_type === "profit_proof" ? "🔥 수익인증" : "📘 매매법공유"}
+              </span>
+            </div>
             <div className="mb-2 flex items-center gap-2">
               <span className="h-6 w-6 rounded-full bg-[#243352]" />
               <span className="text-sm font-bold text-white">

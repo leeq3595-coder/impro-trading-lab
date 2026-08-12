@@ -13,6 +13,7 @@ type ColumnRow = {
   title: string;
   category: string;
   is_vip: boolean;
+  is_pinned: boolean;
   author_id: string;
   cover_image_url: string | null;
   published_at: string;
@@ -26,7 +27,9 @@ type PostRow = {
   screenshot_url: string | null;
   profit_rate: number | null;
   likes_count: number;
+  likes_boost: number;
   comments_count: number;
+  is_pinned: boolean;
   created_at: string;
 };
 
@@ -48,6 +51,7 @@ type MaterialRow = {
   title: string;
   category: string;
   is_vip: boolean;
+  is_pinned: boolean;
   created_at: string;
 };
 
@@ -84,24 +88,29 @@ export default async function Home() {
       .maybeSingle(),
     supabase
       .from("columns")
-      .select("id,title,category,is_vip,author_id,cover_image_url,published_at")
+      .select(
+        "id,title,category,is_vip,is_pinned,author_id,cover_image_url,published_at"
+      )
       .eq("is_published", true)
       .eq("is_hidden", false)
+      .order("is_pinned", { ascending: false })
       .order("published_at", { ascending: false })
       .limit(2)
       .returns<ColumnRow[]>(),
     supabase
       .from("community_posts")
       .select(
-        "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,comments_count,created_at"
+        "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,likes_boost,comments_count,is_pinned,created_at"
       )
       .eq("post_type", "profit_proof")
+      .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(2)
       .returns<PostRow[]>(),
     supabase
       .from("materials")
-      .select("id,title,category,is_vip,created_at")
+      .select("id,title,category,is_vip,is_pinned,created_at")
+      .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(2)
       .returns<MaterialRow[]>(),
@@ -240,9 +249,16 @@ export default async function Home() {
                     🔒
                   </span>
                   <div className="min-w-0 flex-1">
-                    <span className="mb-1 inline-block rounded-full bg-[rgba(232,185,75,0.18)] px-2 py-0.5 text-[10px] font-bold text-[#f6d888]">
-                      VIP 전용
-                    </span>
+                    <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                      {c.is_pinned && (
+                        <span className="rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                          📌 고정
+                        </span>
+                      )}
+                      <span className="inline-block rounded-full bg-[rgba(232,185,75,0.18)] px-2 py-0.5 text-[10px] font-bold text-[#f6d888]">
+                        VIP 전용
+                      </span>
+                    </div>
                     <div className="truncate text-sm font-bold text-white">
                       {c.title}
                     </div>
@@ -264,9 +280,16 @@ export default async function Home() {
                     fallbackEmoji="📊"
                   />
                   <div className="min-w-0 flex-1">
-                    <span className="mb-1 inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
-                      {c.category}
-                    </span>
+                    <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                      {c.is_pinned && (
+                        <span className="rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                          📌 고정
+                        </span>
+                      )}
+                      <span className="inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
+                        {c.category}
+                      </span>
+                    </div>
                     <div className="truncate text-sm font-bold text-white">
                       {c.title}
                     </div>
@@ -323,9 +346,16 @@ export default async function Home() {
                 href={`/community/${p.id}`}
                 className="block rounded-2xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-4"
               >
-                <span className="mb-2 inline-block rounded-full bg-[rgba(232,120,75,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f6a97e]">
-                  🔥 수익인증
-                </span>
+                <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                  {p.is_pinned && (
+                    <span className="inline-block rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                      📌 고정
+                    </span>
+                  )}
+                  <span className="inline-block rounded-full bg-[rgba(232,120,75,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f6a97e]">
+                    🔥 수익인증
+                  </span>
+                </div>
                 <div className="mb-2 flex items-center gap-2">
                   <span className="h-6 w-6 rounded-full bg-[#243352]" />
                   <span className="text-sm font-bold text-white">
@@ -345,7 +375,7 @@ export default async function Home() {
                   </p>
                 )}
                 <div className="mt-2 flex items-center gap-3 text-xs text-[#5f6b82]">
-                  <span>❤️ {p.likes_count}</span>
+                  <span>❤️ {p.likes_count + (p.likes_boost ?? 0)}</span>
                   <span>💬 {p.comments_count}</span>
                 </div>
               </Link>
@@ -384,6 +414,11 @@ export default async function Home() {
                   {m.is_vip ? "🔒" : "📄"}
                 </span>
                 <div className="min-w-0 flex-1">
+                  {m.is_pinned && (
+                    <span className="mb-0.5 mr-1 inline-block rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                      📌 고정
+                    </span>
+                  )}
                   <div className="truncate text-sm font-bold text-white">
                     {m.title}
                   </div>
