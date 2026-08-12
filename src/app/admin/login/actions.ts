@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { errorDetail } from "@/lib/errorDetail";
+import { usernameToAdminEmail } from "@/lib/adminAuth";
 
 export type AdminAuthState = { error?: string } | undefined;
 
@@ -10,11 +11,12 @@ export async function adminLogin(
   _prevState: AdminAuthState,
   formData: FormData
 ): Promise<AdminAuthState> {
-  const email = String(formData.get("email") || "").trim();
+  const username = String(formData.get("username") || "").trim();
   const password = String(formData.get("password") || "");
-  if (!email || !password) {
-    return { error: "이메일과 비밀번호를 입력해주세요." };
+  if (!username || !password) {
+    return { error: "아이디와 비밀번호를 입력해주세요." };
   }
+  const email = usernameToAdminEmail(username);
 
   const supabase = await createClient();
   let data, error;
@@ -34,7 +36,7 @@ export async function adminLogin(
     };
   }
   if (!data.user) {
-    return { error: "이메일 또는 비밀번호가 올바르지 않아요." };
+    return { error: "아이디 또는 비밀번호가 올바르지 않아요." };
   }
 
   const { data: profile } = await supabase

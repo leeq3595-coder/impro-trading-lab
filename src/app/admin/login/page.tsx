@@ -19,10 +19,11 @@ export default function AdminLoginPage() {
 
         <form action={formAction} className="flex flex-col gap-3">
           <input
-            name="email"
-            type="email"
-            placeholder="관리자 이메일"
+            name="username"
+            type="text"
+            placeholder="관리자 아이디"
             required
+            autoComplete="username"
             className="rounded-xl bg-[#101a30] border border-[rgba(232,185,75,0.25)] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#e8b94b]"
           />
           <input
