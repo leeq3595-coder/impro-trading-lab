@@ -4,10 +4,12 @@ import { logout } from "@/app/login/actions";
 
 const MENU = [
   { href: "/admin/vip", label: "회원 VIP 업그레이드", ready: true, desc: "회원 검색, 올림프트레이드 UID 확인, VIP 전환" },
-  { href: "/admin/notices", label: "공지사항 관리", ready: false, desc: "작성 · 상단고정 · 수정 (준비중)" },
-  { href: "/admin/materials", label: "자료실 관리", ready: false, desc: "문서 · 동영상 업로드 (준비중)" },
+  { href: "/admin/columns", label: "칼럼 관리", ready: true, desc: "칼럼 작성 · 수정 · VIP 설정 · 공개/비공개" },
+  { href: "/admin/community", label: "커뮤니티 관리", ready: true, desc: "수익인증 · 매매법공유 등록/삭제" },
+  { href: "/admin/materials", label: "자료실 관리", ready: true, desc: "문서 · 영상 링크 등록/수정/삭제" },
+  { href: "/admin/notices", label: "공지사항 관리", ready: true, desc: "작성 · 상단고정 · 수정" },
+  { href: "/admin/links", label: "바로가기 링크 관리", ready: true, desc: "홈 배너 등 외부 링크 설정" },
   { href: "/admin/rewards", label: "리워드 챌린지 관리", ready: false, desc: "1·2·3위 금액 설정 (준비중)" },
-  { href: "/admin/links", label: "바로가기 링크 관리", ready: false, desc: "홈 배너 등 외부 링크 설정 (준비중)" },
 ];
 
 export default async function AdminDashboard() {

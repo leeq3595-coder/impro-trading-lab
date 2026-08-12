@@ -1,0 +1,145 @@
+"use client";
+
+import { useRef, useState, type ReactNode } from "react";
+
+type Slide = {
+  key: string;
+  tag: string;
+  tagClass: string;
+  title: ReactNode;
+  desc: ReactNode;
+  cta: string;
+  ctaClass: string;
+  cardClass: string;
+  url: string;
+};
+
+export function HomeBannerCarousel({ urls }: { urls: Record<string, string> }) {
+  const slides: Slide[] = [
+    {
+      key: "banner1_signup",
+      tag: "⚡ VIP UNLOCK",
+      tagClass: "bg-[rgba(56,189,248,0.15)] text-[#38bdf8]",
+      title: (
+        <>
+          올림프트레이드 가입하고
+          <br />
+          VIP칼럼 &amp; 시그널 참여하기
+        </>
+      ),
+      desc: (
+        <>
+          임쁘로 추천코드로 가입 후 관리자 확인되면
+          <br />
+          VIP시그널, 칼럼이 자동으로 열려요
+        </>
+      ),
+      cta: "지금 가입하기 →",
+      ctaClass: "bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] text-[#04101f]",
+      cardClass:
+        "from-[#0e1b33] to-[#132043] border-[rgba(96,150,255,0.25)]",
+      url: urls.banner1_signup || "/signup",
+    },
+    {
+      key: "banner2_prop",
+      tag: "🔥 PROP TRADING",
+      tagClass: "bg-[rgba(74,222,128,0.15)] text-[#4ade80]",
+      title: <>남의 돈으로 내 시드 불리기</>,
+      desc: (
+        <>
+          내 돈 = 소액 테스트 · 회사 돈 = 진짜 계좌
+          <br />
+          수익 80% = 내 몫
+        </>
+      ),
+      cta: "자세한 사항 확인 →",
+      ctaClass: "bg-gradient-to-r from-[#4ade80] to-[#22c55e] text-[#04101f]",
+      cardClass:
+        "from-[#0e2318] to-[#123420] border-[rgba(74,222,128,0.25)]",
+      url: urls.banner2_prop || "/signup",
+    },
+    {
+      key: "banner3_youtube",
+      tag: "🔴 임프로 유튜브",
+      tagClass: "bg-[rgba(248,113,113,0.15)] text-[#f87171]",
+      title: <>월에 5만불씩 출금中</>,
+      desc: (
+        <>
+          임프로 트레이딩 실전 매매 내역
+          <br />
+          유튜브에서 직접 확인해보세요
+        </>
+      ),
+      cta: "내역 보러가기 →",
+      ctaClass: "bg-gradient-to-r from-[#f87171] to-[#ef4444] text-white",
+      cardClass:
+        "from-[#2a1218] to-[#3a1620] border-[rgba(248,113,113,0.25)]",
+      url: urls.banner3_youtube || "/",
+    },
+  ];
+
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+
+  function handleScroll() {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    setActive(idx);
+  }
+
+  function goTo(i: number) {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+  }
+
+  return (
+    <div className="mb-4">
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="flex snap-x snap-mandatory overflow-x-auto scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {slides.map((s) => (
+          <a
+            key={s.key}
+            href={s.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`block w-full shrink-0 snap-center overflow-hidden rounded-2xl border bg-gradient-to-br p-5 ${s.cardClass}`}
+          >
+            <div
+              className={`mb-2 inline-block rounded-full px-2 py-1 text-[11px] font-bold ${s.tagClass}`}
+            >
+              {s.tag}
+            </div>
+            <div className="mb-1 text-lg font-bold leading-snug text-white">
+              {s.title}
+            </div>
+            <p className="mb-4 text-xs leading-relaxed text-[#93a0b8]">
+              {s.desc}
+            </p>
+            <span
+              className={`inline-block rounded-xl px-4 py-2 text-sm font-bold ${s.ctaClass}`}
+            >
+              {s.cta}
+            </span>
+          </a>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center justify-center gap-1.5">
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            aria-label={`슬라이드 ${i + 1}`}
+            className={`h-1.5 rounded-full transition-all ${
+              active === i ? "w-4 bg-[#38bdf8]" : "w-1.5 bg-[rgba(255,255,255,0.2)]"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}

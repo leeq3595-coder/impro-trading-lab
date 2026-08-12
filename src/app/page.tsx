@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
 import { BottomNav } from "@/components/BottomNav";
 import { GatedLink } from "@/components/GatedLink";
+import { HomeBannerCarousel } from "@/components/HomeBannerCarousel";
 
 export const revalidate = 0;
 
@@ -90,7 +91,12 @@ export default async function Home() {
     supabase
       .from("link_settings")
       .select("link_key,url")
-      .in("link_key", ["banner1_signup", "vip_signal_telegram"]),
+      .in("link_key", [
+        "banner1_signup",
+        "banner2_prop",
+        "banner3_youtube",
+        "vip_signal_telegram",
+      ]),
   ]);
 
   const authorIds = Array.from(
@@ -109,7 +115,11 @@ export default async function Home() {
   }
 
   const linkByKey = new Map((links ?? []).map((l) => [l.link_key, l.url]));
-  const signupBannerUrl = linkByKey.get("banner1_signup") || "/signup";
+  const bannerUrls = {
+    banner1_signup: linkByKey.get("banner1_signup") || "/signup",
+    banner2_prop: linkByKey.get("banner2_prop") || "/signup",
+    banner3_youtube: linkByKey.get("banner3_youtube") || "/",
+  };
   const vipSignalUrl = linkByKey.get("vip_signal_telegram") || "/signup";
 
   return (
@@ -135,30 +145,8 @@ export default async function Home() {
       </header>
 
       <div className="mx-auto max-w-md px-4 pt-4">
-        {/* 배너 */}
-        <a
-          href={signupBannerUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mb-4 block overflow-hidden rounded-2xl border border-[rgba(96,150,255,0.25)] bg-gradient-to-br from-[#0e1b33] to-[#132043] p-5"
-        >
-          <div className="mb-2 inline-block rounded-full bg-[rgba(56,189,248,0.15)] px-2 py-1 text-[11px] font-bold text-[#38bdf8]">
-            ⚡ VIP UNLOCK
-          </div>
-          <div className="mb-1 text-lg font-bold leading-snug text-white">
-            올림프트레이드 가입하고
-            <br />
-            VIP칼럼 &amp; 시그널 참여하기
-          </div>
-          <p className="mb-4 text-xs leading-relaxed text-[#93a0b8]">
-            임쁘로 추천코드로 가입 후 관리자 확인되면
-            <br />
-            VIP시그널, 칼럼이 자동으로 열려요
-          </p>
-          <span className="inline-block rounded-xl bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-4 py-2 text-sm font-bold text-[#04101f]">
-            지금 가입하기 →
-          </span>
-        </a>
+        {/* 배너 캐러셀 */}
+        <HomeBannerCarousel urls={bannerUrls} />
 
         {/* 공지 */}
         {notice && (
