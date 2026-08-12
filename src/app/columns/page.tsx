@@ -12,6 +12,7 @@ type ColumnRow = {
   category: string;
   is_vip: boolean;
   author_id: string;
+  cover_image_url: string | null;
   published_at: string;
 };
 
@@ -34,8 +35,9 @@ export default async function ColumnsPage() {
 
   const { data: columns } = await supabase
     .from("columns")
-    .select("id,title,category,is_vip,author_id,published_at")
+    .select("id,title,category,is_vip,author_id,cover_image_url,published_at")
     .eq("is_published", true)
+    .eq("is_hidden", false)
     .order("published_at", { ascending: false })
     .returns<ColumnRow[]>();
 
@@ -92,9 +94,18 @@ export default async function ColumnsPage() {
                 href={`/columns/${c.id}`}
                 className="flex items-start gap-3 rounded-2xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-4"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(59,130,246,0.15)] text-base">
-                  📊
-                </span>
+                {c.cover_image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={c.cover_image_url}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded-xl object-cover"
+                  />
+                ) : (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(59,130,246,0.15)] text-base">
+                    📊
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <span className="mb-1 inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
                     {c.category}

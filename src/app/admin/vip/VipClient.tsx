@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { clientErrorMessage } from "@/lib/clientError";
 import { deleteMember } from "./actions";
 
 type Member = {
@@ -49,7 +50,7 @@ export default function VipClient() {
       if (error) throw error;
       setMembers((data as Member[]) ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "검색 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "검색 중 오류가 발생했어요."));
     } finally {
       setLoading(false);
     }
@@ -72,7 +73,7 @@ export default function VipClient() {
         prev.map((x) => (x.id === m.id ? { ...x, is_vip: nextVip } : x))
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
       setSavingId(null);
     }
@@ -90,7 +91,7 @@ export default function VipClient() {
       if (res?.error) throw new Error(res.error);
       setMembers((prev) => prev.filter((x) => x.id !== m.id));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "삭제 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "삭제 중 오류가 발생했어요."));
     } finally {
       setSavingId(null);
     }
@@ -114,7 +115,7 @@ export default function VipClient() {
         )
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
       setSavingId(null);
     }

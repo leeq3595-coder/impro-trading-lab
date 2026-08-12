@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { clientErrorMessage } from "@/lib/clientError";
 
 type LinkRow = { link_key: string; label: string; url: string };
 
@@ -31,7 +32,7 @@ export default function LinksClient() {
       if (error) throw error;
       setRows((data as LinkRow[]) ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "불러오기 실패");
+      setError(clientErrorMessage(e, "불러오기 실패"));
     } finally {
       setLoading(false);
     }
@@ -65,7 +66,7 @@ export default function LinksClient() {
       setSavedKey(row.link_key);
       setTimeout(() => setSavedKey(null), 1500);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
       setSavingKey(null);
     }
@@ -91,7 +92,7 @@ export default function LinksClient() {
       setAddOpen(false);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
       setSavingKey(null);
     }

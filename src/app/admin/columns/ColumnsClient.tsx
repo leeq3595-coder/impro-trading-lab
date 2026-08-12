@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { clientErrorMessage } from "@/lib/clientError";
 
 type ColumnRow = {
   id: string;
@@ -11,6 +12,8 @@ type ColumnRow = {
   category: "시황분석" | "종목분석";
   is_vip: boolean;
   is_published: boolean;
+  is_hidden: boolean;
+  cover_image_url: string | null;
   published_at: string;
 };
 
@@ -20,6 +23,8 @@ const EMPTY_FORM = {
   category: "시황분석" as ColumnRow["category"],
   is_vip: false,
   is_published: true,
+  is_hidden: false,
+  cover_image_url: "",
 };
 
 export default function ColumnsClient({ adminId }: { adminId: string }) {
@@ -32,6 +37,18 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  async function copyLink(row: ColumnRow) {
+    const url = `${window.location.origin}/columns/${row.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(row.id);
+      setTimeout(() => setCopiedId(null), 1500);
+    } catch {
+      window.prompt("아래 링크를 복사해주세요", url);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -40,13 +57,13 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
       const { data, error } = await supabase
         .from("columns")
         .select(
-          "id,title,content,category,is_vip,is_published,published_at"
+          "id,title,content,category,is_vip,is_published,is_hidden,cover_image_url,published_at"
         )
         .order("published_at", { ascending: false });
       if (error) throw error;
       setRows((data as ColumnRow[]) ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "불러오기 실패");
+      setError(clientErrorMessage(e, "불러오기 실패"));
     } finally {
       setLoading(false);
     }
@@ -71,6 +88,8 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
       category: row.category,
       is_vip: row.is_vip,
       is_published: row.is_published,
+      is_hidden: row.is_hidden,
+      cover_image_url: row.cover_image_url ?? "",
     });
     setFormOpen(true);
   }
@@ -92,6 +111,8 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
             category: form.category,
             is_vip: form.is_vip,
             is_published: form.is_published,
+            is_hidden: form.is_hidden,
+            cover_image_url: form.cover_image_url.trim() || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingId);
@@ -103,6 +124,8 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
           category: form.category,
           is_vip: form.is_vip,
           is_published: form.is_published,
+          is_hidden: form.is_hidden,
+          cover_image_url: form.cover_image_url.trim() || null,
           author_id: adminId,
         });
         if (error) throw error;
@@ -112,7 +135,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
       setEditingId(null);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
       setSaving(false);
     }
@@ -132,7 +155,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
         )
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
       setSaving(false);
     }
@@ -150,7 +173,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
       if (error) throw error;
       setRows((prev) => prev.filter((r) => r.id !== row.id));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "삭제 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "삭제 중 오류가 발생했어요."));
     } finally {
       setSaving(false);
     }
@@ -192,6 +215,14 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                 placeholder="제목"
                 className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
               />
+              <input
+                value={form.cover_image_url}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, cover_image_url: e.target.value }))
+                }
+                placeholder="대표 이미지 URL (선택, 목록/카드에 표시돼요)"
+                className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
+              />
               <textarea
                 value={form.content}
                 onChange={(e) =>
@@ -201,6 +232,13 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                 rows={8}
                 className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
               />
+              <p className="-mt-1 text-[11px] leading-relaxed text-[#5f6b82]">
+                💡 본문 중간에 사진이나 유튜브 영상을 넣고 싶으면, 그 자리에
+                이미지 URL(.jpg/.png/.gif/.webp) 또는 유튜브 링크만 있는
+                줄을 넣어주세요. 자동으로 사진/영상으로 바뀌어요. 강조 박스로
+                보이게 하려면 그 줄 맨 앞에 <code>!!</code>를 붙여주세요 (예:{" "}
+                <code>!! 오늘 지지선은 여기예요</code>).
+              </p>
               <div className="flex flex-wrap items-center gap-4">
                 <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
                   카테고리
@@ -242,6 +280,23 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                   즉시 공개
                 </label>
               </div>
+              <label className="flex items-start gap-2 rounded-lg border border-[rgba(232,185,75,0.3)] bg-[rgba(232,185,75,0.05)] px-3 py-2.5 text-xs text-[#f6d888]">
+                <input
+                  type="checkbox"
+                  checked={form.is_hidden}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, is_hidden: e.target.checked }))
+                  }
+                  className="mt-0.5"
+                />
+                <span>
+                  🔗 히든 랜딩페이지로 만들기 — 홈/칼럼 목록 어디에도 안 뜨고
+                  링크 아는 사람만 들어올 수 있어요. 인스타 릴스 → DM → 이
+                  링크로 트래픽 유입시킬 때 써주세요. 하단에 &quot;다음 칼럼
+                  읽기&quot;/&quot;소통방 입장하기&quot; 고정 버튼이 자동으로
+                  붙어요.
+                </span>
+              </label>
               <div className="mt-1 flex gap-2">
                 <button
                   onClick={submit}
@@ -293,6 +348,11 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                         비공개
                       </span>
                     )}
+                    {r.is_hidden && (
+                      <span className="rounded-full bg-[rgba(232,185,75,0.18)] px-2 py-0.5 text-[10px] font-bold text-[#f6d888]">
+                        🔗 히든 랜딩
+                      </span>
+                    )}
                   </div>
                   <div className="mt-1 truncate font-bold text-white">
                     {r.title}
@@ -311,6 +371,12 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                   className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8]"
                 >
                   수정
+                </button>
+                <button
+                  onClick={() => copyLink(r)}
+                  className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8]"
+                >
+                  {copiedId === r.id ? "✓ 복사됨" : "🔗 링크 복사"}
                 </button>
                 <button
                   onClick={() => togglePublished(r)}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { clientErrorMessage } from "@/lib/clientError";
 
 type NoticeRow = {
   id: string;
@@ -36,7 +37,7 @@ export default function NoticesClient({ adminId }: { adminId: string }) {
       if (error) throw error;
       setRows((data as NoticeRow[]) ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "불러오기 실패");
+      setError(clientErrorMessage(e, "불러오기 실패"));
     } finally {
       setLoading(false);
     }
@@ -96,7 +97,7 @@ export default function NoticesClient({ adminId }: { adminId: string }) {
       setEditingId(null);
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
       setSaving(false);
     }
@@ -112,7 +113,7 @@ export default function NoticesClient({ adminId }: { adminId: string }) {
       if (error) throw error;
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
       setSaving(false);
     }
@@ -130,7 +131,7 @@ export default function NoticesClient({ adminId }: { adminId: string }) {
       if (error) throw error;
       setRows((prev) => prev.filter((r) => r.id !== row.id));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "삭제 중 오류가 발생했어요.");
+      setError(clientErrorMessage(e, "삭제 중 오류가 발생했어요."));
     } finally {
       setSaving(false);
     }
