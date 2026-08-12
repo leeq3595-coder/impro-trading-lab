@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createAccount } from "./actions";
 
 type Step = 1 | 2 | 3;
@@ -39,6 +40,7 @@ export default function SignupPage() {
               name="email"
               type="email"
               placeholder="이메일"
+              autoComplete="username"
               required
               className="rounded-xl bg-[#101a30] border border-[rgba(96,150,255,0.18)] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
             />
@@ -46,6 +48,7 @@ export default function SignupPage() {
               name="password"
               type="password"
               placeholder="비밀번호 (8자 이상)"
+              autoComplete="new-password"
               required
               className="rounded-xl bg-[#101a30] border border-[rgba(96,150,255,0.18)] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
             />
@@ -186,19 +189,35 @@ function PhoneStep({
 }
 
 function DoneStep() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // 가입 시 자동으로 로그인 세션이 만들어졌어요 — 다시 로그인 안 해도 되게
+    // 잠시 후 홈으로 자동 이동해요. (router.refresh로 로그인 상태를 반영해요)
+    const timer = setTimeout(() => {
+      router.refresh();
+      router.push("/");
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [router]);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-2xl border border-[rgba(232,185,75,0.45)] bg-[rgba(232,185,75,0.06)] p-4 text-sm text-[#f3f5f9] leading-relaxed">
-        가입이 완료됐어요! 임쁘로 추천코드로 올림프트레이드에 가입하시면,
-        관리자 확인 후 계정이 자동으로 VIP로 전환돼요. VIP 시그널, 커뮤니티,
-        VIP 교재, VIP 칼럼까지 모두 제공됩니다.
+        가입이 완료됐어요! 자동으로 로그인됐고, 잠시 후 홈으로 이동해요.
+        임쁘로 추천코드로 올림프트레이드에 가입하시면, 관리자 확인 후 계정이
+        자동으로 VIP로 전환돼요. VIP 시그널, 커뮤니티, VIP 교재, VIP
+        칼럼까지 모두 제공됩니다.
       </div>
-      <Link
-        href="/login"
+      <button
+        onClick={() => {
+          router.refresh();
+          router.push("/");
+        }}
         className="text-center rounded-xl bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] py-3 font-bold text-[#04101f]"
       >
-        로그인하러 가기
-      </Link>
+        바로 시작하기
+      </button>
     </div>
   );
 }

@@ -58,24 +58,34 @@ export function ContentEditor({
   }
 
   function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    const fileItem = Array.from(items).find(
-      (it) =>
-        it.kind === "file" &&
-        (it.type.startsWith("image/") || it.type.startsWith("video/"))
+    const dt = e.clipboardData;
+    if (!dt) return;
+    const pos = e.currentTarget.selectionStart;
+
+    // 1) 파일 자체를 복사해서 붙여넣은 경우 (탐색기/파인더에서 파일 복사 등)
+    const directFiles = Array.from(dt.files ?? []);
+    if (directFiles.length > 0) {
+      e.preventDefault();
+      directFiles.forEach((f) => void uploadAndInsert(f, pos));
+      return;
+    }
+
+    // 2) 클립보드에 이미지 데이터만 있는 경우 (스크린샷, "이미지 복사" 등)
+    //    브라우저/OS에 따라 type이 비어있게 오는 경우도 있어서, kind가
+    //    "file"이면 일단 붙잡아서 업로드를 시도해요 (텍스트로 새는 걸 방지).
+    const items = Array.from(dt.items ?? []).filter(
+      (it) => it.kind === "file"
     );
-    if (!fileItem) return; // 이미지가 아니면 원래대로 텍스트 붙여넣기 동작
-    const file = fileItem.getAsFile();
-    if (!file) return;
+    if (items.length === 0) return; // 진짜 텍스트 붙여넣기는 그대로 통과
     e.preventDefault();
-    void uploadAndInsert(file, e.currentTarget.selectionStart);
+    items.forEach((it) => {
+      const file = it.getAsFile();
+      if (file) void uploadAndInsert(file, pos);
+    });
   }
 
   function handleDrop(e: DragEvent<HTMLTextAreaElement>) {
-    const files = Array.from(e.dataTransfer?.files ?? []).filter(
-      (f) => f.type.startsWith("image/") || f.type.startsWith("video/")
-    );
+    const files = Array.from(e.dataTransfer?.files ?? []);
     if (files.length === 0) return;
     e.preventDefault();
     const pos = e.currentTarget.selectionStart;

@@ -74,5 +74,24 @@ export async function createAccount(
 
   // Supabase 대시보드에서 "Confirm email"을 꺼뒀기 때문에 이메일 인증 없이 바로 가입 완료돼요.
   // (휴대폰 인증이 실제 본인확인 역할을 해요)
+
+  // signUp()이 세션까지 만들어주는 경우도 있지만, 프로젝트 설정에 따라 세션 없이
+  // user만 돌아오는 경우도 있어서 — 가입 직후 자동 로그인이 확실히 되도록 여기서
+  // 한 번 더 로그인을 시도해요. (같은 supabase 클라이언트라 성공하면 쿠키가 바로 저장돼요)
+  try {
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (signInError) {
+      console.error(
+        "[signup] auto sign-in after signup failed:",
+        errorDetail(signInError)
+      );
+    }
+  } catch (e) {
+    console.error("[signup] auto sign-in unexpected throw:", errorDetail(e));
+  }
+
   return { ok: true, userId: data.user.id };
 }

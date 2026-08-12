@@ -18,6 +18,7 @@ export default function LoginPage() {
             name="email"
             type="email"
             placeholder="이메일"
+            autoComplete="username"
             required
             className="rounded-xl bg-[#101a30] border border-[rgba(96,150,255,0.18)] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
           />
@@ -25,6 +26,7 @@ export default function LoginPage() {
             name="password"
             type="password"
             placeholder="비밀번호"
+            autoComplete="current-password"
             required
             className="rounded-xl bg-[#101a30] border border-[rgba(96,150,255,0.18)] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
           />
