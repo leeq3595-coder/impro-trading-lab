@@ -105,8 +105,13 @@ export default async function Home() {
           fixed로 바꾸고, 아래 콘텐츠 영역에 그만큼 여백(pt)을 줬어요. */}
       <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] flex items-center justify-between border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#38bdf8] to-[#3b82f6] text-sm font-bold text-[#04101f]">
-            임
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#38bdf8] to-[#3b82f6]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/profile-logo.jpg"
+              alt="임프로트레이딩랩 로고"
+              className="h-full w-full object-cover"
+            />
           </div>
           <span className="text-base font-bold text-white">
             임프로<span className="text-[#38bdf8]">트레이딩랩</span>

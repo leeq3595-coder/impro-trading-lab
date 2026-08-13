@@ -13,3 +13,14 @@ export function usernameToAdminEmail(username: string) {
 // (아무나 그 페이지 주소를 알아내도 계정을 못 만들게 막는 용도).
 // 서버 코드 안에만 있고 브라우저로는 전달되지 않아요.
 export const ADMIN_SETUP_SECRET = "5522ldsaA!!";
+
+// 관리자가 (가라회원/지인용으로) 회원 계정을 대신 만들어줄 때도 이메일
+// 대신 "아이디"만 받고 싶어서, 관리자 계정과 같은 방식으로 내부용
+// 가짜 이메일로 바꿔서 써요. 관리자 계정 도메인이랑 헷갈리지 않게
+// 도메인만 다르게 써요.
+export const MEMBER_EMAIL_DOMAIN = "member.improtradinglab.app";
+
+export function usernameToMemberEmail(username: string) {
+  const normalized = username.trim().toLowerCase();
+  return `${normalized}@${MEMBER_EMAIL_DOMAIN}`;
+}

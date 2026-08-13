@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
-import { deleteMember } from "./actions";
+import { deleteMember, createMember } from "./actions";
 
 type Member = {
   id: string;
@@ -26,6 +26,12 @@ export default function VipClient() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [uidDrafts, setUidDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createState, createAction, createPending] = useActionState(
+    createMember,
+    undefined
+  );
 
   async function search() {
     setLoading(true);
@@ -142,6 +148,74 @@ export default function VipClient() {
           비밀번호는 암호화되어 저장되기 때문에 관리자도 원문을 볼 수 없고,
           엑셀 추출에도 포함되지 않아요 (보안상 정상적인 동작이에요).
         </p>
+
+        <div className="mb-6 rounded-2xl border border-[rgba(96,150,255,0.25)] bg-[#0b1120] p-4">
+          <button
+            onClick={() => setCreateOpen((v) => !v)}
+            className="flex w-full items-center justify-between text-sm font-bold text-white"
+          >
+            <span>+ 회원 직접 추가 (가라회원 · 지인용)</span>
+            <span className="text-xs text-[#5f6b82]">
+              {createOpen ? "접기 ▲" : "펼치기 ▼"}
+            </span>
+          </button>
+          {createOpen && (
+            <form action={createAction} className="mt-3 flex flex-col gap-2.5">
+              <p className="text-[11px] leading-relaxed text-[#5f6b82]">
+                아이디/비번/닉네임만 입력하면 휴대폰 인증 없이 바로 로그인
+                가능한 계정이 만들어져요. 문자인증이 켜진 뒤에도(한 번호당
+                계정 1개 제한) 이 기능으로는 계속 만들 수 있어요. 아래 칸에
+                그냥 &quot;친구1&quot;처럼 짧게 입력하면 로그인용 이메일이
+                자동으로 만들어져요(만들고 나면 그 전체 주소를 보여드려요).
+                직접 갖고 있는 실제 이메일(gmail·naver 등)을 그대로 넣어도
+                되는데, 그럴 땐 이메일 하나당 계정을 1개만 만들 수 있어요.
+              </p>
+              <input
+                name="username"
+                placeholder="아이디 (예: 친구1) 또는 실제 이메일 주소"
+                autoComplete="off"
+                required
+                className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
+              />
+              <input
+                name="password"
+                type="password"
+                placeholder="비밀번호 (4자 이상)"
+                autoComplete="new-password"
+                required
+                className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
+              />
+              <input
+                name="nickname"
+                placeholder="닉네임"
+                required
+                className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
+              />
+              <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
+                <input type="checkbox" name="is_vip" />
+                VIP로 바로 전환
+              </label>
+              {createState && "error" in createState && (
+                <p className="text-xs text-[#f87171]">{createState.error}</p>
+              )}
+              {createState && "ok" in createState && (
+                <p className="text-xs leading-relaxed text-[#4ade80]">
+                  ✓ 계정이 만들어졌어요. 로그인 화면 이메일란에{" "}
+                  <b className="text-white">{createState.email}</b> 을(를)
+                  입력하면 돼요 (아이디 그대로 쓰는 게 아니라 이 전체
+                  주소예요).
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={createPending}
+                className="mt-1 rounded-lg bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-4 py-2.5 text-sm font-bold text-[#04101f] disabled:opacity-60"
+              >
+                {createPending ? "만드는 중..." : "계정 만들기"}
+              </button>
+            </form>
+          )}
+        </div>
 
         <div className="flex gap-2 mb-6">
           <input

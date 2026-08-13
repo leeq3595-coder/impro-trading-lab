@@ -80,6 +80,7 @@ export type PublicMaterial = {
   description: string | null;
   file_url: string | null;
   video_url: string | null;
+  thumbnail_url: string | null;
   is_vip: boolean;
   is_pinned: boolean;
   created_at: string;
@@ -90,7 +91,7 @@ export const getMaterialsList = unstable_cache(
     const { data } = await createPublicClient()
       .from("materials")
       .select(
-        "id,title,category,description,file_url,video_url,is_vip,is_pinned,created_at"
+        "id,title,category,description,file_url,video_url,thumbnail_url,is_vip,is_pinned,created_at"
       )
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false });
