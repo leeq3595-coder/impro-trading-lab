@@ -61,10 +61,28 @@ export default async function CommunityPage() {
     strategyRows = data ?? [];
   }
 
+  // 전체보기 탭 — 수익인증 + 매매법공유를 합쳐서 고정글 우선, 그다음 최신순으로 보여줘요.
+  // (비로그인이면 매매법공유는 원래 못 보니까 수익인증만 있는 profitRows를 그대로 써요)
+  let allRows: PostRow[];
+  if (loggedIn) {
+    const { data } = await supabase
+      .from("community_posts")
+      .select(
+        "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,likes_boost,comments_count,is_pinned,created_at"
+      )
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false })
+      .returns<PostRow[]>();
+    allRows = data ?? [];
+  } else {
+    allRows = profitRows ?? [];
+  }
+
   const authorIds = Array.from(
     new Set([
       ...(profitRows ?? []).map((p) => p.author_id),
       ...(strategyRows ?? []).map((p) => p.author_id),
+      ...allRows.map((p) => p.author_id),
     ])
   );
   let nicknameById = new Map<string, string>();
@@ -108,6 +126,7 @@ export default async function CommunityPage() {
       <div className="mx-auto max-w-md px-4 pt-[68px]">
         <CommunityTabs
           loggedIn={loggedIn}
+          allPosts={allRows.map(toCard)}
           profitPosts={(profitRows ?? []).map(toCard)}
           strategyPosts={strategyRows ? strategyRows.map(toCard) : null}
         />

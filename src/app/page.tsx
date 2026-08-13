@@ -97,13 +97,19 @@ export default async function Home() {
       .order("published_at", { ascending: false })
       .limit(2)
       .returns<ColumnRow[]>(),
+    // 홈 화면 미리보기는 "전체보기"(수익인증+매매법공유 통합)와 동일한
+    // 최신순 피드예요. 상단고정은 홈에는 반영하지 않고 진짜 최신글만 보여줘요.
+    // 비로그인이면 매매법공유는 원래 못 보니 수익인증만 나가요.
     supabase
       .from("community_posts")
       .select(
         "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,likes_boost,comments_count,is_pinned,created_at"
       )
-      .eq("post_type", "profit_proof")
-      .order("is_pinned", { ascending: false })
+      .in(
+        "post_type",
+        loggedIn ? ["profit_proof", "strategy_share"] : ["profit_proof"]
+      )
+      .eq("is_pinned", false)
       .order("created_at", { ascending: false })
       .limit(2)
       .returns<PostRow[]>(),
@@ -338,7 +344,7 @@ export default async function Home() {
 
           <div className="flex flex-col gap-3">
             {(posts ?? []).length === 0 && (
-              <EmptyCard text="아직 등록된 수익인증이 없어요" />
+              <EmptyCard text="아직 등록된 글이 없어요" />
             )}
             {(posts ?? []).map((p) => (
               <Link
@@ -346,16 +352,15 @@ export default async function Home() {
                 href={`/community/${p.id}`}
                 className="block rounded-2xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-4"
               >
-                <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                  {p.is_pinned && (
-                    <span className="inline-block rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
-                      📌 고정
-                    </span>
-                  )}
-                  <span className="inline-block rounded-full bg-[rgba(232,120,75,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f6a97e]">
-                    🔥 수익인증
-                  </span>
-                </div>
+                <span
+                  className={`mb-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    p.post_type === "profit_proof"
+                      ? "bg-[rgba(232,120,75,0.16)] text-[#f6a97e]"
+                      : "bg-[rgba(96,150,255,0.16)] text-[#8fb3ff]"
+                  }`}
+                >
+                  {p.post_type === "profit_proof" ? "🔥 수익인증" : "📘 매매법공유"}
+                </span>
                 <div className="mb-2 flex items-center gap-2">
                   <span className="h-6 w-6 rounded-full bg-[#243352]" />
                   <span className="text-sm font-bold text-white">

@@ -51,6 +51,7 @@ export default function CommunityAdminClient({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [boostDrafts, setBoostDrafts] = useState<Record<string, string>>({});
 
@@ -79,6 +80,28 @@ export default function CommunityAdminClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function openCreate() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setFormOpen(true);
+  }
+
+  function openEdit(row: PostRow) {
+    setEditingId(row.id);
+    setForm({
+      post_type: row.post_type,
+      title: row.title ?? "",
+      content: row.content ?? "",
+      symbol: row.symbol ?? "",
+      trade_count: row.trade_count != null ? String(row.trade_count) : "",
+      seed_amount: row.seed_amount != null ? String(row.seed_amount) : "",
+      profit_amount:
+        row.profit_amount != null ? String(row.profit_amount) : "",
+      screenshot_url: row.screenshot_url ?? "",
+    });
+    setFormOpen(true);
+  }
+
   async function submit() {
     setError(null);
     if (form.post_type === "profit_proof") {
@@ -95,27 +118,41 @@ export default function CommunityAdminClient({
 
     setSaving(true);
     try {
-      const { error } =
+      const payload =
         form.post_type === "profit_proof"
-          ? await supabase.from("community_posts").insert({
+          ? {
               post_type: "profit_proof" as const,
-              author_id: adminId,
               content: form.content.trim() || null,
               symbol: form.symbol.trim(),
               trade_count: form.trade_count ? Number(form.trade_count) : 0,
               seed_amount: Number(form.seed_amount),
               profit_amount: Number(form.profit_amount),
               screenshot_url: form.screenshot_url.trim() || null,
-            })
-          : await supabase.from("community_posts").insert({
+              title: null,
+            }
+          : {
               post_type: "strategy_share" as const,
-              author_id: adminId,
               title: form.title.trim(),
               content: form.content,
-            });
+              symbol: null,
+              trade_count: null,
+              seed_amount: null,
+              profit_amount: null,
+              screenshot_url: null,
+            };
+
+      const { error } = editingId
+        ? await supabase
+            .from("community_posts")
+            .update({ ...payload, updated_at: new Date().toISOString() })
+            .eq("id", editingId)
+        : await supabase
+            .from("community_posts")
+            .insert({ ...payload, author_id: adminId });
       if (error) throw error;
       setFormOpen(false);
       setForm(EMPTY_FORM);
+      setEditingId(null);
       await load();
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
@@ -195,10 +232,7 @@ export default function CommunityAdminClient({
             ← 관리자 홈
           </Link>
           <button
-            onClick={() => {
-              setForm(EMPTY_FORM);
-              setFormOpen(true);
-            }}
+            onClick={openCreate}
             className="rounded-lg bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-4 py-2 text-sm font-bold text-[#04101f]"
           >
             + 게시글 등록
@@ -217,6 +251,9 @@ export default function CommunityAdminClient({
 
         {formOpen && (
           <div className="mb-6 rounded-2xl border border-[rgba(96,150,255,0.25)] bg-[#0b1120] p-5">
+            <h2 className="mb-3 text-sm font-bold text-white">
+              {editingId ? "게시글 수정" : "새 게시글 등록"}
+            </h2>
             <div className="mb-3 flex gap-2">
               <button
                 onClick={() =>
@@ -345,10 +382,13 @@ export default function CommunityAdminClient({
                 disabled={saving}
                 className="rounded-lg bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-4 py-2 text-sm font-bold text-[#04101f] disabled:opacity-60"
               >
-                {saving ? "저장 중..." : "등록"}
+                {saving ? "저장 중..." : editingId ? "수정 저장" : "등록"}
               </button>
               <button
-                onClick={() => setFormOpen(false)}
+                onClick={() => {
+                  setFormOpen(false);
+                  setEditingId(null);
+                }}
                 className="rounded-lg border border-[rgba(96,150,255,0.2)] px-4 py-2 text-sm text-[#93a0b8]"
               >
                 취소
@@ -401,6 +441,12 @@ export default function CommunityAdminClient({
                 </p>
               )}
               <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => openEdit(r)}
+                  className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8]"
+                >
+                  수정
+                </button>
                 <button
                   onClick={() => togglePinned(r)}
                   disabled={saving}

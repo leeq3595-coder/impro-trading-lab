@@ -49,14 +49,16 @@ function PostThumb({ src }: { src: string }) {
 
 export function CommunityTabs({
   loggedIn,
+  allPosts,
   profitPosts,
   strategyPosts,
 }: {
   loggedIn: boolean;
+  allPosts: CommunityPostCard[];
   profitPosts: CommunityPostCard[];
   strategyPosts: CommunityPostCard[] | null;
 }) {
-  const [tab, setTab] = useState<"profit" | "strategy">("profit");
+  const [tab, setTab] = useState<"all" | "profit" | "strategy">("all");
   const { openGate } = useAuthGate();
 
   function handleStrategyTab() {
@@ -69,11 +71,22 @@ export function CommunityTabs({
     setTab("strategy");
   }
 
-  const posts = tab === "profit" ? profitPosts : strategyPosts ?? [];
+  const posts =
+    tab === "all" ? allPosts : tab === "profit" ? profitPosts : strategyPosts ?? [];
 
   return (
     <div>
       <div className="mb-4 flex gap-2">
+        <button
+          onClick={() => setTab("all")}
+          className={`flex-1 rounded-xl py-2.5 text-sm font-bold ${
+            tab === "all"
+              ? "bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] text-[#04101f]"
+              : "bg-[#0b1120] text-[#93a0b8]"
+          }`}
+        >
+          🗂 전체보기
+        </button>
         <button
           onClick={() => setTab("profit")}
           className={`flex-1 rounded-xl py-2.5 text-sm font-bold ${
@@ -100,9 +113,11 @@ export function CommunityTabs({
       <div className="flex flex-col gap-3">
         {posts.length === 0 && (
           <div className="rounded-2xl border border-dashed border-[rgba(96,150,255,0.2)] bg-[#0b1120]/50 p-6 text-center text-xs text-[#5f6b82]">
-            {tab === "profit"
-              ? "아직 등록된 수익인증이 없어요"
-              : "아직 등록된 매매법공유가 없어요"}
+            {tab === "all"
+              ? "아직 등록된 게시글이 없어요"
+              : tab === "profit"
+                ? "아직 등록된 수익인증이 없어요"
+                : "아직 등록된 매매법공유가 없어요"}
           </div>
         )}
         {posts.map((p) => (
