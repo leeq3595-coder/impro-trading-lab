@@ -4,6 +4,17 @@ import { errorDetail } from "@/lib/errorDetail";
 
 type Purpose = "signup" | "find_email" | "reset_password";
 
+// ===== 문자 안 오는 회원용 비상 우회코드 =====
+// "문자인증이 안 옵니다" 하는 회원한테 안내해줄 고정 코드예요. 실제 발송된
+// 6자리 대신 이 코드를 입력해도 인증 통과돼요.
+// ⚠️ 일부러 "회원가입"에서만 통하게 만들었어요 — 아이디찾기/비밀번호
+// 재설정까지 이 코드로 뚫리면, 이 코드를 아는 사람이 "남의 전화번호"만
+// 알아도 그 사람 비밀번호를 바꿔버릴 수 있는 심각한 보안 문제가 생겨서요.
+// 회원가입 단계에서만 쓰이니, 어차피 그 사람 본인이 자기 번호를 입력한
+// 상황이라 문제 없어요. 코드를 바꾸고 싶으면 Vercel 환경변수에
+// OTP_BACKUP_CODE 를 추가하면 돼요(안 넣으면 기본값 777777).
+const BACKUP_CODE = process.env.OTP_BACKUP_CODE || "777777";
+
 function maskEmail(email: string) {
   const [name, domain] = email.split("@");
   if (!domain) return email;
@@ -70,7 +81,8 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  if (otp.code !== code) {
+  const isBackupCode = purpose === "signup" && code === BACKUP_CODE;
+  if (otp.code !== code && !isBackupCode) {
     await supabase
       .from("phone_otp")
       .update({ attempts: otp.attempts + 1 })
