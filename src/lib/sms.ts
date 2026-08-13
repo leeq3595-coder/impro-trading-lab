@@ -90,7 +90,11 @@ export async function sendOtpSms(
   code: string,
   purpose: string
 ): Promise<SmsResult> {
-  const message = `[임프로트레이딩랩] 인증번호는 [${code}] 입니다. 3분 이내에 입력해주세요.`;
+  // Twilio(해외발신)는 영어로, 알리고(국내발신)는 한글로 — 해외 번호에서
+  // 한글 문자가 오면 오히려 더 스팸처럼 보일 수 있어서 발신 방식에 맞춰
+  // 문구를 다르게 써요.
+  const messageEn = `[Impro Trading Lab] Your verification code is ${code}. It expires in 3 minutes.`;
+  const messageKo = `[임프로트레이딩랩] 인증번호는 [${code}] 입니다. 3분 이내에 입력해주세요.`;
 
   const hasTwilio =
     !!process.env.TWILIO_ACCOUNT_SID &&
@@ -101,18 +105,8 @@ export async function sendOtpSms(
     !!process.env.ALIGO_USER_ID &&
     !!process.env.ALIGO_SENDER_PHONE;
 
-  // TEMP 디버그 — 실제 키 값은 절대 안 찍고, 각 환경변수가 "있는지 없는지"만
-  // 로그로 남겨요. 원인 찾히면 이 블록은 지울 거예요.
-  console.log("[SMS-DEBUG] env presence:", {
-    TWILIO_ACCOUNT_SID: !!process.env.TWILIO_ACCOUNT_SID,
-    TWILIO_AUTH_TOKEN: !!process.env.TWILIO_AUTH_TOKEN,
-    TWILIO_FROM_NUMBER: !!process.env.TWILIO_FROM_NUMBER,
-    hasTwilio,
-    hasAligo,
-  });
-
-  if (hasTwilio) return sendViaTwilio(phone, message);
-  if (hasAligo) return sendViaAligo(phone, message);
+  if (hasTwilio) return sendViaTwilio(phone, messageEn);
+  if (hasAligo) return sendViaAligo(phone, messageKo);
 
   // 키가 아직 하나도 없으면(개발 중) 콘솔에만 코드 출력하고 성공 처리
   console.log(`[OTP-DEV] ${phone} 인증번호(${purpose}): ${code}`);
