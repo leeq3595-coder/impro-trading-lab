@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { createCommunityPost } from "./actions";
-import { MediaUploader } from "@/components/MediaUploader";
+import { MultiImageUploader } from "@/components/MultiImageUploader";
 import { ContentEditor } from "@/components/ContentEditor";
 
 export default function WriteClient() {
@@ -14,7 +14,7 @@ export default function WriteClient() {
   const [postType, setPostType] = useState<"profit_proof" | "strategy_share">(
     "profit_proof"
   );
-  const [screenshotUrl, setScreenshotUrl] = useState("");
+  const [screenshotUrls, setScreenshotUrls] = useState<string[]>([]);
   const [profitContent, setProfitContent] = useState("");
   const [strategyContent, setStrategyContent] = useState("");
 
@@ -84,22 +84,14 @@ export default function WriteClient() {
                 placeholder="매매 횟수 (선택)"
                 className="rounded-xl border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
               />
-              <div className="flex flex-col gap-2">
-                <input
-                  name="screenshot_url"
-                  value={screenshotUrl}
-                  onChange={(e) => setScreenshotUrl(e.target.value)}
-                  placeholder="인증 스크린샷 URL (선택)"
-                  className="rounded-xl border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
-                />
-                <MediaUploader
-                  folder="community/screenshot"
-                  label="스크린샷 업로드"
-                  accept="image/*"
-                  showCamera
-                  onUploaded={(url) => setScreenshotUrl(url)}
-                />
-              </div>
+              <MultiImageUploader
+                value={screenshotUrls}
+                onChange={setScreenshotUrls}
+                max={5}
+                folder="community/screenshot"
+                label="스크린샷 업로드"
+                showCamera
+              />
               <textarea
                 name="content"
                 value={profitContent}

@@ -80,6 +80,7 @@ export default async function CommunityPage() {
       authorNickname: nicknameById.get(p.author_id) ?? "회원",
       content: p.content,
       screenshot_url: p.screenshot_url,
+      screenshot_urls: p.screenshot_urls,
       profit_rate: p.profit_rate,
       likes_count: p.likes_count + (p.likes_boost ?? 0),
       comments_count: p.comments_count,

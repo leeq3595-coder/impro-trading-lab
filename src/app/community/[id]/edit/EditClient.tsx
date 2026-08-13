@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { updateCommunityPost } from "@/app/community/write/actions";
-import { MediaUploader } from "@/components/MediaUploader";
+import { MultiImageUploader } from "@/components/MultiImageUploader";
 import { ContentEditor } from "@/components/ContentEditor";
 
 type PostToEdit = {
@@ -16,12 +16,19 @@ type PostToEdit = {
   seed_amount: number | null;
   profit_amount: number | null;
   screenshot_url: string | null;
+  screenshot_urls: string[] | null;
 };
 
 export default function EditClient({ post }: { post: PostToEdit }) {
   const updateWithId = updateCommunityPost.bind(null, post.id);
   const [state, formAction, pending] = useActionState(updateWithId, undefined);
-  const [screenshotUrl, setScreenshotUrl] = useState(post.screenshot_url ?? "");
+  const [screenshotUrls, setScreenshotUrls] = useState<string[]>(
+    post.screenshot_urls && post.screenshot_urls.length > 0
+      ? post.screenshot_urls
+      : post.screenshot_url
+        ? [post.screenshot_url]
+        : []
+  );
   const [content, setContent] = useState(post.content ?? "");
 
   return (
@@ -69,22 +76,14 @@ export default function EditClient({ post }: { post: PostToEdit }) {
                 placeholder="매매 횟수 (선택)"
                 className="rounded-xl border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
               />
-              <div className="flex flex-col gap-2">
-                <input
-                  name="screenshot_url"
-                  value={screenshotUrl}
-                  onChange={(e) => setScreenshotUrl(e.target.value)}
-                  placeholder="인증 스크린샷 URL (선택)"
-                  className="rounded-xl border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
-                />
-                <MediaUploader
-                  folder="community/screenshot"
-                  label="스크린샷 업로드"
-                  accept="image/*"
-                  showCamera
-                  onUploaded={(url) => setScreenshotUrl(url)}
-                />
-              </div>
+              <MultiImageUploader
+                value={screenshotUrls}
+                onChange={setScreenshotUrls}
+                max={5}
+                folder="community/screenshot"
+                label="스크린샷 업로드"
+                showCamera
+              />
               <textarea
                 name="content"
                 value={content}

@@ -10,6 +10,7 @@ export type CommunityPostCard = {
   authorNickname: string;
   content: string | null;
   screenshot_url: string | null;
+  screenshot_urls: string[] | null;
   profit_rate: number | null;
   likes_count: number;
   comments_count: number;
@@ -32,18 +33,25 @@ function previewText(content: string) {
 
 // 스크린샷 주소가 깨져 있으면(잘못된 URL 등) 브라우저 기본 "깨진 이미지"
 // 아이콘 대신 그냥 그 자리를 감춰요.
-function PostThumb({ src }: { src: string }) {
+function PostThumb({ src, count }: { src: string; count?: number }) {
   const [broken, setBroken] = useState(false);
   if (broken) return null;
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt=""
-      loading="lazy"
-      className="mb-2 h-40 w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
-      onError={() => setBroken(true)}
-    />
+    <div className="relative mb-2">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        className="h-40 w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
+        onError={() => setBroken(true)}
+      />
+      {count && count > 1 && (
+        <span className="absolute right-2 top-2 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">
+          +{count - 1}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -156,7 +164,16 @@ export function CommunityTabs({
                 {p.timeLabel}
               </span>
             </div>
-            {p.screenshot_url && <PostThumb src={p.screenshot_url} />}
+            {(() => {
+              const imgs =
+                p.screenshot_urls && p.screenshot_urls.length > 0
+                  ? p.screenshot_urls
+                  : p.screenshot_url
+                    ? [p.screenshot_url]
+                    : [];
+              if (imgs.length === 0) return null;
+              return <PostThumb src={imgs[0]} count={imgs.length} />;
+            })()}
             {p.content && previewText(p.content) && (
               <p className="line-clamp-2 text-sm text-[#c9d3e6]">
                 {previewText(p.content)}

@@ -174,13 +174,32 @@ export default async function CommunityDetailPage({
           </div>
         )}
 
-        {post.post_type === "profit_proof" && (
-          <SafeThumb
-            src={post.screenshot_url}
-            alt="인증 스크린샷"
-            className="mb-4 w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
-          />
-        )}
+        {post.post_type === "profit_proof" &&
+          (() => {
+            const images =
+              post.screenshot_urls && post.screenshot_urls.length > 0
+                ? post.screenshot_urls
+                : post.screenshot_url
+                  ? [post.screenshot_url]
+                  : [];
+            if (images.length === 0) return null;
+            return (
+              <div
+                className={`mb-4 grid gap-2 ${
+                  images.length === 1 ? "grid-cols-1" : "grid-cols-2"
+                }`}
+              >
+                {images.map((src, i) => (
+                  <SafeThumb
+                    key={src + i}
+                    src={src}
+                    alt={`인증 스크린샷 ${i + 1}`}
+                    className="aspect-square w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
+                  />
+                ))}
+              </div>
+            );
+          })()}
 
         {post.content && <RichContent content={post.content} />}
 

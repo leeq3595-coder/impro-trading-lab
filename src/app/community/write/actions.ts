@@ -23,7 +23,11 @@ export async function createCommunityPost(
     const seedAmount = Number(formData.get("seed_amount") || 0);
     const profitAmount = Number(formData.get("profit_amount") || 0);
     const tradeCount = Number(formData.get("trade_count") || 0);
-    const screenshotUrl = String(formData.get("screenshot_url") || "").trim();
+    const screenshotUrls = formData
+      .getAll("screenshot_urls")
+      .map((v) => String(v).trim())
+      .filter(Boolean)
+      .slice(0, 5);
     const content = String(formData.get("content") || "").trim();
 
     if (!symbol || !seedAmount || !profitAmount) {
@@ -39,7 +43,8 @@ export async function createCommunityPost(
         seed_amount: seedAmount,
         profit_amount: profitAmount,
         trade_count: tradeCount || 0,
-        screenshot_url: screenshotUrl || null,
+        screenshot_url: screenshotUrls[0] || null,
+        screenshot_urls: screenshotUrls,
         content: content || null,
       })
       .select("id")
@@ -120,7 +125,11 @@ export async function updateCommunityPost(
     const seedAmount = Number(formData.get("seed_amount") || 0);
     const profitAmount = Number(formData.get("profit_amount") || 0);
     const tradeCount = Number(formData.get("trade_count") || 0);
-    const screenshotUrl = String(formData.get("screenshot_url") || "").trim();
+    const screenshotUrls = formData
+      .getAll("screenshot_urls")
+      .map((v) => String(v).trim())
+      .filter(Boolean)
+      .slice(0, 5);
     const content = String(formData.get("content") || "").trim();
 
     if (!symbol || !seedAmount || !profitAmount) {
@@ -134,7 +143,8 @@ export async function updateCommunityPost(
         seed_amount: seedAmount,
         profit_amount: profitAmount,
         trade_count: tradeCount || 0,
-        screenshot_url: screenshotUrl || null,
+        screenshot_url: screenshotUrls[0] || null,
+        screenshot_urls: screenshotUrls,
         content: content || null,
         updated_at: new Date().toISOString(),
       })

@@ -348,7 +348,7 @@ export default async function Home() {
                   </span>
                 </div>
                 <SafeThumb
-                  src={p.screenshot_url}
+                  src={p.screenshot_urls?.[0] ?? p.screenshot_url}
                   className="mb-2 h-40 w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
                 />
                 {p.content && previewText(p.content) && (

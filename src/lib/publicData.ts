@@ -112,6 +112,7 @@ export type PublicCommunityPost = {
   profit_amount: number | null;
   profit_rate: number | null;
   screenshot_url: string | null;
+  screenshot_urls: string[];
   likes_count: number;
   likes_boost: number;
   comments_count: number;
@@ -120,7 +121,7 @@ export type PublicCommunityPost = {
 };
 
 const COMMUNITY_POST_COLUMNS =
-  "id,post_type,author_id,title,content,symbol,trade_count,seed_amount,profit_amount,profit_rate,screenshot_url,likes_count,likes_boost,comments_count,is_pinned,created_at";
+  "id,post_type,author_id,title,content,symbol,trade_count,seed_amount,profit_amount,profit_rate,screenshot_url,screenshot_urls,likes_count,likes_boost,comments_count,is_pinned,created_at";
 
 // 커뮤니티 게시글 전체(수익인증 + 매매법공유 둘 다 섞여서). 홈 미리보기 /
 // 커뮤니티 목록(전체보기·수익인증·매매법공유 탭) 전부 이 데이터 하나를

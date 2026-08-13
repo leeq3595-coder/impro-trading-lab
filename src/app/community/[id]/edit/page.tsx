@@ -17,7 +17,7 @@ export default async function CommunityEditPage({
   const { data: post } = await supabase
     .from("community_posts")
     .select(
-      "id,post_type,title,content,symbol,trade_count,seed_amount,profit_amount,screenshot_url"
+      "id,post_type,title,content,symbol,trade_count,seed_amount,profit_amount,screenshot_url,screenshot_urls"
     )
     .eq("id", id)
     .eq("author_id", profile.id)
