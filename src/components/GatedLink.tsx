@@ -11,6 +11,7 @@ export function GatedLink({
   className,
   children,
   onClick,
+  prefetch,
 }: {
   href: string;
   loggedIn: boolean;
@@ -18,6 +19,7 @@ export function GatedLink({
   className?: string;
   children: ReactNode;
   onClick?: () => void;
+  prefetch?: boolean;
 }) {
   const { openGate } = useAuthGate();
 
@@ -31,7 +33,13 @@ export function GatedLink({
   }
 
   return (
-    <Link href={loggedIn ? href : "#"} onClick={handleClick} className={className}>
+    <Link
+      href={loggedIn ? href : "#"}
+      onClick={handleClick}
+      className={className}
+      // 비로그인이면 href가 "#"라서 프리패치할 실제 경로가 없어요.
+      prefetch={loggedIn ? prefetch : false}
+    >
       {children}
     </Link>
   );
