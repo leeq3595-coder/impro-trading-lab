@@ -32,19 +32,23 @@ function timeAgo(iso: string) {
 
 export default async function ColumnsPage() {
   const supabase = await createClient();
-  const profile = await getCurrentProfile();
-  const loggedIn = !!profile;
 
-  const { data: columns } = await supabase
-    .from("columns")
-    .select(
-      "id,title,category,is_vip,is_pinned,author_id,cover_image_url,published_at"
-    )
-    .eq("is_published", true)
-    .eq("is_hidden", false)
-    .order("is_pinned", { ascending: false })
-    .order("published_at", { ascending: false })
-    .returns<ColumnRow[]>();
+  // 로그인 확인이랑 칼럼 목록 조회는 서로 관계없는 요청이라 동시에 보내요
+  // (하나씩 순서대로 기다리면 왕복 시간이 그대로 더해져서 느려져요).
+  const [profile, { data: columns }] = await Promise.all([
+    getCurrentProfile(),
+    supabase
+      .from("columns")
+      .select(
+        "id,title,category,is_vip,is_pinned,author_id,cover_image_url,published_at"
+      )
+      .eq("is_published", true)
+      .eq("is_hidden", false)
+      .order("is_pinned", { ascending: false })
+      .order("published_at", { ascending: false })
+      .returns<ColumnRow[]>(),
+  ]);
+  const loggedIn = !!profile;
 
   const authorIds = Array.from(new Set((columns ?? []).map((c) => c.author_id)));
   let nicknameById = new Map<string, string>();

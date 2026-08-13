@@ -128,6 +128,7 @@ export default async function Home() {
         "banner2_prop",
         "banner3_youtube",
         "vip_signal_telegram",
+        "olympe_funded_detail",
       ]),
   ]);
 
@@ -153,6 +154,7 @@ export default async function Home() {
     banner3_youtube: linkByKey.get("banner3_youtube") || "/",
   };
   const vipSignalUrl = linkByKey.get("vip_signal_telegram") || "/signup";
+  const olympeFundedUrl = linkByKey.get("olympe_funded_detail") || "/signup";
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
@@ -310,6 +312,38 @@ export default async function Home() {
           </div>
         </section>
 
+        {/* 올림프 펀디드 배너 — 칼럼과 커뮤니티 섹션 사이 고정 프로모션 카드.
+            "자세히 보기" 링크는 관리자 > 바로가기 링크 관리에서
+            olympe_funded_detail 키로 바꿀 수 있어요. */}
+        <a
+          href={olympeFundedUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-7 block rounded-2xl border border-[rgba(232,185,75,0.3)] bg-gradient-to-br from-[#161208] to-[#1c1608] p-4"
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-sm font-bold text-[#f6d888]">
+              🪙 올림프 펀디드
+            </span>
+            <span className="text-xs text-[#93a0b8]">자세히 보기 ›</span>
+          </div>
+          <div className="mb-2 text-base font-bold leading-snug text-white">
+            내 돈 없이 최대 $15,000 시드 받고
+            <br />
+            수익의 80%는 내 몫으로
+          </div>
+          <p className="mb-4 text-xs leading-relaxed text-[#93a0b8]">
+            🔥트레이딩판의 새로운 대세 - 프랍 트레이딩(Prop Trading)
+            <br />
+            계좌 수익 2배 달성 시 자금 즉시지원
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <StatMini value="$15,000" label="최대 지원금" />
+            <StatMini value="80%" label="수익 배분" />
+            <StatMini value="6~9" label="잔여 계좌" />
+          </div>
+        </a>
+
         {/* 02 수익인증 & 매매법공유 */}
         <section className="mb-7">
           <div className="mb-3 flex items-center justify-between">
@@ -446,6 +480,15 @@ function EmptyCard({ text }: { text: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-[rgba(96,150,255,0.2)] bg-[#0b1120]/50 p-6 text-center text-xs text-[#5f6b82]">
       {text}
+    </div>
+  );
+}
+
+function StatMini({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-xl border border-[rgba(232,185,75,0.18)] bg-[rgba(232,185,75,0.05)] p-2.5 text-center">
+      <div className="text-sm font-bold text-[#f6d888]">{value}</div>
+      <div className="mt-0.5 text-[10px] text-[#93a0b8]">{label}</div>
     </div>
   );
 }

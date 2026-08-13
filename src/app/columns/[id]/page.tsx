@@ -17,46 +17,24 @@ export default async function ColumnDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const profile = await getCurrentProfile();
-  const loggedIn = !!profile;
 
-  const { data: column } = await supabase
-    .from("columns")
-    .select(
-      "id,title,category,is_vip,is_hidden,content,cover_image_url,author_id,published_at,likes_count"
-    )
-    .eq("id", id)
-    .maybeSingle();
+  // 로그인 확인이랑 칼럼 조회는 서로 관계없는 요청이라 동시에 보내요
+  // (하나씩 순서대로 기다리면 왕복 시간이 그대로 더해져서 느려져요).
+  const [profile, { data: column }] = await Promise.all([
+    getCurrentProfile(),
+    supabase
+      .from("columns")
+      .select(
+        "id,title,category,is_vip,is_hidden,content,cover_image_url,author_id,published_at,likes_count"
+      )
+      .eq("id", id)
+      .maybeSingle(),
+  ]);
+  const loggedIn = !!profile;
 
   if (!column) notFound();
 
   const isLanding = column.is_hidden;
-
-  let authorNickname = "임쁘로";
-  const { data: author } = await supabase
-    .from("public_profiles")
-    .select("nickname")
-    .eq("id", column.author_id)
-    .maybeSingle();
-  if (author) authorNickname = author.nickname;
-
-  const dateLabel = new Date(column.published_at)
-    .toISOString()
-    .slice(0, 10)
-    .replace(/-/g, ".");
-
-  let communityUrl = "/signup";
-  if (isLanding) {
-    const { data: links } = await supabase
-      .from("link_settings")
-      .select("link_key,url")
-      .in("link_key", ["community_chat", "vip_signal_telegram"]);
-    const byKey = new Map((links ?? []).map((l) => [l.link_key, l.url]));
-    communityUrl =
-      byKey.get("community_chat") ||
-      byKey.get("vip_signal_telegram") ||
-      "/signup";
-  }
 
   // 비로그인 상태에서 VIP 칼럼 직접 접근 → 가입유도 팝업 + 잠금 화면
   if (column.is_vip && !loggedIn) {
@@ -127,6 +105,52 @@ export default async function ColumnDetailPage({
     );
   }
 
+  // 여기서부터는 서로 관계없는 요청 3개(작성자 닉네임 / 소통방 링크 / 스크랩
+  // 여부)를 한꺼번에 보내요. 필요 없는 건(랜딩이 아니면 링크, 비로그인이거나
+  // 랜딩이면 스크랩) 아예 요청 자체를 안 보내게 건너뛰어요.
+  const [authorResult, linksResult, scrapResult] = await Promise.all([
+    supabase
+      .from("public_profiles")
+      .select("nickname")
+      .eq("id", column.author_id)
+      .maybeSingle(),
+    isLanding
+      ? supabase
+          .from("link_settings")
+          .select("link_key,url")
+          .in("link_key", ["community_chat", "vip_signal_telegram"])
+      : Promise.resolve({ data: null as { link_key: string; url: string }[] | null }),
+    profile && !isLanding
+      ? supabase
+          .from("scraps")
+          .select("id")
+          .eq("column_id", column.id)
+          .eq("user_id", profile.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { id: string } | null }),
+  ]);
+
+  let authorNickname = "임쁘로";
+  if (authorResult.data) authorNickname = authorResult.data.nickname;
+
+  const dateLabel = new Date(column.published_at)
+    .toISOString()
+    .slice(0, 10)
+    .replace(/-/g, ".");
+
+  let communityUrl = "/signup";
+  if (isLanding) {
+    const byKey = new Map(
+      (linksResult.data ?? []).map((l) => [l.link_key, l.url])
+    );
+    communityUrl =
+      byKey.get("community_chat") ||
+      byKey.get("vip_signal_telegram") ||
+      "/signup";
+  }
+
+  const scrapped = !!scrapResult.data;
+
   if (isLanding) {
     // 히든 랜딩페이지는 노션(Notion) 라이트 스타일 — 앱의 다른 페이지와 달리
     // 이 화면만 흰 배경 + 어두운 글씨로 가독성을 최대화해요.
@@ -183,17 +207,6 @@ export default async function ColumnDetailPage({
         </div>
       </main>
     );
-  }
-
-  let scrapped = false;
-  if (profile) {
-    const { data: scrapRow } = await supabase
-      .from("scraps")
-      .select("id")
-      .eq("column_id", column.id)
-      .eq("user_id", profile.id)
-      .maybeSingle();
-    scrapped = !!scrapRow;
   }
 
   return (
