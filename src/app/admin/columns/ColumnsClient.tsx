@@ -334,7 +334,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                 </label>
               </div>
               <p className="rounded-lg border border-[rgba(96,150,255,0.15)] bg-[rgba(96,150,255,0.04)] px-3 py-2 text-[11px] leading-relaxed text-[#5f6b82]">
-                💡 인스타 릴스용 히든 랜딩페이지는 여기가 아니라{" "}
+                💡 히든 랜딩페이지는 여기가 아니라{" "}
                 <Link href="/admin/landing" className="font-semibold text-[#8fb3ff] underline">
                   히든 랜딩페이지 관리
                 </Link>{" "}

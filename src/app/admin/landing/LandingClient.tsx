@@ -199,8 +199,8 @@ export default function LandingClient({ adminId }: { adminId: string }) {
         </h1>
         <p className="mb-6 text-xs leading-relaxed text-[#5f6b82]">
           여기서 만든 글은 홈/칼럼 목록 어디에도 노출되지 않고, 아래 &quot;링크
-          복사&quot; 버튼으로 얻은 주소로만 들어올 수 있어요. 인스타 릴스 → DM
-          자동 연동 → 이 링크로 트래픽을 유입시키는 용도예요. 페이지 하단에는
+          복사&quot; 버튼으로 얻은 주소로만 들어올 수 있어요. 외부 채널에서
+          이 링크로 트래픽을 유입시키는 용도예요. 페이지 하단에는
           &quot;다음 칼럼 읽기&quot; / &quot;공식 소통방 입장하기&quot; 고정
           버튼이 자동으로 붙어요.
         </p>

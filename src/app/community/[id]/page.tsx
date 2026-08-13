@@ -6,6 +6,7 @@ import { getCommunityPostById } from "@/lib/publicData";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 import { LikeButton } from "@/components/LikeButton";
+import { PostOwnerActions } from "@/components/community/PostOwnerActions";
 import { CommentsSection, type CommentItem } from "@/components/CommentsSection";
 import { RichContent } from "@/components/RichContent";
 import { SafeThumb } from "@/components/SafeThumb";
@@ -152,6 +153,10 @@ export default async function CommunityDetailPage({
             <div className="text-[11px] text-[#5f6b82]">{dateLabel}</div>
           </div>
         </div>
+
+        {profile?.id === post.author_id && (
+          <PostOwnerActions postId={post.id} />
+        )}
 
         {post.title && (
           <h1 className="mb-3 text-lg font-bold text-white">{post.title}</h1>
