@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
 import { getColumnById, getAllLinkSettings } from "@/lib/publicData";
+import { excerptFromContent } from "@/lib/ogText";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 import { RichContent } from "@/components/RichContent";
@@ -10,6 +12,43 @@ import { SafeThumb } from "@/components/SafeThumb";
 import Link from "next/link";
 
 export const revalidate = 0;
+
+// 카카오톡 등에 칼럼 링크를 공유했을 때 뜨는 미리보기(제목·설명·이미지)예요.
+// 칼럼은 비회원도 볼 수 있어서, 클릭을 유도할 수 있게 실제 제목/표지이미지를
+// 그대로 써요. VIP 칼럼은 잠금 표시를 살짝 섞어서 궁금증을 자극해요.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const column = await getColumnById(id);
+  if (!column) return {};
+
+  const title = column.is_vip
+    ? `🔒 [VIP] ${column.title} - 임프로트레이딩랩`
+    : `${column.title} - 임프로트레이딩랩`;
+  const description = excerptFromContent(column.content);
+  const image = column.cover_image_url || "/profile-logo.jpg";
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/columns/${id}`,
+      type: "article",
+      images: [{ url: image, width: 1200, height: 630, alt: column.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
+}
 
 export default async function ColumnDetailPage({
   params,
