@@ -319,11 +319,11 @@ export default async function Home() {
           href={olympeFundedUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-7 block rounded-2xl border border-[rgba(232,185,75,0.3)] bg-gradient-to-br from-[#161208] to-[#1c1608] p-4"
+          className="mb-7 block rounded-2xl border border-[rgba(74,222,128,0.3)] bg-gradient-to-br from-[#0e2318] to-[#123420] p-4"
         >
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm font-bold text-[#f6d888]">
-              🪙 올림프 펀디드
+            <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(74,222,128,0.15)] px-2.5 py-1 text-xs font-bold text-[#4ade80]">
+              💰 올림프 펀디드
             </span>
             <span className="text-xs text-[#93a0b8]">자세히 보기 ›</span>
           </div>
@@ -486,8 +486,8 @@ function EmptyCard({ text }: { text: string }) {
 
 function StatMini({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-xl border border-[rgba(232,185,75,0.18)] bg-[rgba(232,185,75,0.05)] p-2.5 text-center">
-      <div className="text-sm font-bold text-[#f6d888]">{value}</div>
+    <div className="rounded-xl border border-[rgba(74,222,128,0.18)] bg-[rgba(74,222,128,0.05)] p-2.5 text-center">
+      <div className="text-sm font-bold text-[#4ade80]">{value}</div>
       <div className="mt-0.5 text-[10px] text-[#93a0b8]">{label}</div>
     </div>
   );
