@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
+import {
+  getPublishedColumns,
+  getAllCommunityPosts,
+  getMaterialsList,
+  getAllLinkSettings,
+  getPinnedNotice,
+  type PublicCommunityPost,
+} from "@/lib/publicData";
 import { BottomNav } from "@/components/BottomNav";
 import { GatedLink } from "@/components/GatedLink";
 import { HomeBannerCarousel } from "@/components/HomeBannerCarousel";
@@ -8,30 +16,7 @@ import { SafeThumb } from "@/components/SafeThumb";
 
 export const revalidate = 0;
 
-type ColumnRow = {
-  id: string;
-  title: string;
-  category: string;
-  is_vip: boolean;
-  is_pinned: boolean;
-  author_id: string;
-  cover_image_url: string | null;
-  published_at: string;
-};
-
-type PostRow = {
-  id: string;
-  post_type: "profit_proof" | "strategy_share";
-  author_id: string;
-  content: string | null;
-  screenshot_url: string | null;
-  profit_rate: number | null;
-  likes_count: number;
-  likes_boost: number;
-  comments_count: number;
-  is_pinned: boolean;
-  created_at: string;
-};
+type PostRow = PublicCommunityPost;
 
 // content 안에 이미지/동영상 파일 링크만 통째로 들어있는 경우, 목록 미리보기에는
 // URL 텍스트를 그대로 보여주지 않고 감춰요 (본문 상세에서는 정상적으로 그림으로 보여요).
@@ -45,15 +30,6 @@ function previewText(content: string) {
     .join(" ")
     .trim();
 }
-
-type MaterialRow = {
-  id: string;
-  title: string;
-  category: string;
-  is_vip: boolean;
-  is_pinned: boolean;
-  created_at: string;
-};
 
 function timeAgo(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -69,68 +45,35 @@ function timeAgo(iso: string) {
 
 export default async function Home() {
   const supabase = await createClient();
-  const profile = await getCurrentProfile();
+
+  // 로그인 확인이랑 홈 화면에 필요한 공개 데이터(공지/칼럼/커뮤니티/자료/링크)는
+  // 서로 관계없는 요청이라 동시에 보내요. 공개 데이터는 전부 캐시된 걸
+  // 재사용해요 — 칼럼/자료실/커뮤니티 목록 페이지랑도 캐시를 같이 써요.
+  const [profile, notice, allColumns, allPosts, allMaterials, links] =
+    await Promise.all([
+      getCurrentProfile(),
+      getPinnedNotice(),
+      getPublishedColumns(),
+      getAllCommunityPosts(),
+      getMaterialsList(),
+      getAllLinkSettings(),
+    ]);
   const loggedIn = !!profile;
 
-  const [
-    { data: notice },
-    { data: columns },
-    { data: posts },
-    { data: materials },
-    { data: links },
-  ] = await Promise.all([
-    supabase
-      .from("notices")
-      .select("id,title")
-      .order("is_pinned", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("columns")
-      .select(
-        "id,title,category,is_vip,is_pinned,author_id,cover_image_url,published_at"
-      )
-      .eq("is_published", true)
-      .eq("is_hidden", false)
-      .order("is_pinned", { ascending: false })
-      .order("published_at", { ascending: false })
-      .limit(2)
-      .returns<ColumnRow[]>(),
-    // 홈 화면 미리보기는 "전체보기"(수익인증+매매법공유 통합)와 동일한
-    // 최신순 피드예요. 상단고정은 홈에는 반영하지 않고 진짜 최신글만 보여줘요.
-    // 비로그인이면 매매법공유는 원래 못 보니 수익인증만 나가요.
-    supabase
-      .from("community_posts")
-      .select(
-        "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,likes_boost,comments_count,is_pinned,created_at"
-      )
-      .in(
-        "post_type",
-        loggedIn ? ["profit_proof", "strategy_share"] : ["profit_proof"]
-      )
-      .eq("is_pinned", false)
-      .order("created_at", { ascending: false })
-      .limit(2)
-      .returns<PostRow[]>(),
-    supabase
-      .from("materials")
-      .select("id,title,category,is_vip,is_pinned,created_at")
-      .order("is_pinned", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(2)
-      .returns<MaterialRow[]>(),
-    supabase
-      .from("link_settings")
-      .select("link_key,url")
-      .in("link_key", [
-        "banner1_signup",
-        "banner2_prop",
-        "banner3_youtube",
-        "vip_signal_telegram",
-        "olympe_funded_detail",
-      ]),
-  ]);
+  const columns = allColumns.slice(0, 2);
+
+  // 홈 화면 미리보기는 "전체보기"(수익인증+매매법공유 통합)와 동일한
+  // 최신순 피드예요. 상단고정은 홈에는 반영하지 않고 진짜 최신글만 보여줘요.
+  // 비로그인이면 매매법공유는 원래 못 보니 수익인증만 나가요.
+  const posts: PostRow[] = allPosts
+    .filter((p) => !p.is_pinned)
+    .filter((p) => loggedIn || p.post_type === "profit_proof")
+    .sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+    .slice(0, 2);
+
+  const materials = allMaterials.slice(0, 2);
 
   const authorIds = Array.from(
     new Set([
@@ -147,7 +90,7 @@ export default async function Home() {
     nicknameById = new Map((authors ?? []).map((a) => [a.id, a.nickname]));
   }
 
-  const linkByKey = new Map((links ?? []).map((l) => [l.link_key, l.url]));
+  const linkByKey = new Map(links.map((l) => [l.link_key, l.url]));
   const bannerUrls = {
     banner1_signup: linkByKey.get("banner1_signup") || "/signup",
     banner2_prop: linkByKey.get("banner2_prop") || "/signup",

@@ -1,24 +1,19 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
+import { getMaterialsList } from "@/lib/publicData";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 
 export const revalidate = 0;
 
-type MaterialRow = {
-  id: string;
-  title: string;
-  category: string;
-  description: string | null;
-  file_url: string | null;
-  is_vip: boolean;
-  is_pinned: boolean;
-  created_at: string;
-};
-
 export default async function MaterialsPage() {
-  const profile = await getCurrentProfile();
+  // 로그인 확인이랑 자료 목록 조회는 서로 관계없는 요청이라 동시에 보내요.
+  // 자료 목록 자체는 캐시된 공개 데이터라 대부분 DB를 다시 안 맞고 바로
+  // 나가요 (비회원이면 어차피 아래에서 목록을 안 쓰고 잠금 화면만 보여줘요).
+  const [profile, materials] = await Promise.all([
+    getCurrentProfile(),
+    getMaterialsList(),
+  ]);
   const loggedIn = !!profile;
 
   // 자료실은 비회원에게 목록조차 보여주지 않고 진입 즉시 가입유도 팝업을 띄워요.
@@ -50,16 +45,6 @@ export default async function MaterialsPage() {
       </main>
     );
   }
-
-  const supabase = await createClient();
-  const { data: materials } = await supabase
-    .from("materials")
-    .select(
-      "id,title,category,description,file_url,is_vip,is_pinned,created_at"
-    )
-    .order("is_pinned", { ascending: false })
-    .order("created_at", { ascending: false })
-    .returns<MaterialRow[]>();
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">

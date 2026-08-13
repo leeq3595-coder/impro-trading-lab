@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidateTag } from "next/cache";
 import { requireMember } from "@/lib/supabase/dal";
 import { createClient } from "@/lib/supabase/server";
 import { errorDetail } from "@/lib/errorDetail";
@@ -85,6 +86,9 @@ export async function createCommunityPost(
   if (pointsError) {
     console.error("[community write] points error:", errorDetail(pointsError));
   }
+
+  // 새 글이 홈/커뮤니티 목록 캐시에 바로 반영되게 해요.
+  revalidateTag("public-community-posts", { expire: 0 });
 
   redirect(`/community/${newId}`);
 }

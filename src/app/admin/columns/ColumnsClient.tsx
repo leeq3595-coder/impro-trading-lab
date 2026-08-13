@@ -4,8 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
+import { revalidatePublicData } from "@/lib/publicDataActions";
 import { MediaUploader } from "@/components/MediaUploader";
 import { ContentEditor } from "@/components/ContentEditor";
+
+// 이 화면에서 칼럼을 등록/수정/삭제/고정/공개전환하면 홈·칼럼 목록·칼럼
+// 상세 캐시를 그 자리에서 비워서, 새로고침 없이도 바로 반영되게 해요.
+const COLUMN_CACHE_TAGS = ["public-columns-list", "public-column-by-id"];
 
 type ColumnRow = {
   id: string;
@@ -144,6 +149,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
       setForm(EMPTY_FORM);
       setEditingId(null);
       await load();
+      await revalidatePublicData(COLUMN_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
@@ -164,6 +170,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
           r.id === row.id ? { ...r, is_published: !r.is_published } : r
         )
       );
+      await revalidatePublicData(COLUMN_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
@@ -180,6 +187,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
         .eq("id", row.id);
       if (error) throw error;
       await load();
+      await revalidatePublicData(COLUMN_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
@@ -198,6 +206,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
         .eq("id", row.id);
       if (error) throw error;
       setRows((prev) => prev.filter((r) => r.id !== row.id));
+      await revalidatePublicData(COLUMN_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "삭제 중 오류가 발생했어요."));
     } finally {

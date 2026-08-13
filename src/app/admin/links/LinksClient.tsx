@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
+import { revalidatePublicData } from "@/lib/publicDataActions";
+
+const LINK_CACHE_TAGS = ["public-link-settings"];
 
 type LinkRow = { link_key: string; label: string; url: string };
 
@@ -65,6 +68,7 @@ export default function LinksClient() {
       );
       setSavedKey(row.link_key);
       setTimeout(() => setSavedKey(null), 1500);
+      await revalidatePublicData(LINK_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
@@ -91,6 +95,7 @@ export default function LinksClient() {
       setNewUrl("");
       setAddOpen(false);
       await load();
+      await revalidatePublicData(LINK_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {

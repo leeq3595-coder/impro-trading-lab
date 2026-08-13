@@ -4,8 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
+import { revalidatePublicData } from "@/lib/publicDataActions";
 import { MediaUploader } from "@/components/MediaUploader";
 import { ContentEditor } from "@/components/ContentEditor";
+
+// 히든 랜딩페이지는 목록(칼럼 목록)에는 안 나오고 상세 캐시만 써요.
+const LANDING_CACHE_TAGS = ["public-column-by-id"];
 
 type LandingRow = {
   id: string;
@@ -149,6 +153,7 @@ export default function LandingClient({ adminId }: { adminId: string }) {
       setForm(EMPTY_FORM);
       setEditingId(null);
       await load();
+      await revalidatePublicData(LANDING_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
@@ -167,6 +172,7 @@ export default function LandingClient({ adminId }: { adminId: string }) {
         .eq("id", row.id);
       if (error) throw error;
       setRows((prev) => prev.filter((r) => r.id !== row.id));
+      await revalidatePublicData(LANDING_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "삭제 중 오류가 발생했어요."));
     } finally {

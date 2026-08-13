@@ -1,24 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
+import { getAllCommunityPosts, type PublicCommunityPost } from "@/lib/publicData";
 import { BottomNav } from "@/components/BottomNav";
 import { GatedLink } from "@/components/GatedLink";
 import { CommunityTabs, type CommunityPostCard } from "@/components/CommunityTabs";
 
 export const revalidate = 0;
 
-type PostRow = {
-  id: string;
-  post_type: "profit_proof" | "strategy_share";
-  author_id: string;
-  content: string | null;
-  screenshot_url: string | null;
-  profit_rate: number | null;
-  likes_count: number;
-  likes_boost: number;
-  comments_count: number;
-  is_pinned: boolean;
-  created_at: string;
-};
+type PostRow = PublicCommunityPost;
+
+function sortPosts(rows: PostRow[]) {
+  return [...rows].sort((a, b) => {
+    if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+    return (
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  });
+}
 
 function timeAgo(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -34,49 +32,30 @@ function timeAgo(iso: string) {
 
 export default async function CommunityPage() {
   const supabase = await createClient();
-  const profile = await getCurrentProfile();
+
+  // 로그인 확인이랑 게시글 목록 조회는 서로 관계없는 요청이라 동시에 보내요.
+  // 게시글 목록 자체는 캐시된 공개 데이터(수익인증+매매법공유 전부)라 대부분
+  // DB를 다시 안 맞고 바로 나가요 — 탭별 필터링/정렬은 여기서 메모리로 해요.
+  const [profile, allPostsRaw] = await Promise.all([
+    getCurrentProfile(),
+    getAllCommunityPosts(),
+  ]);
   const loggedIn = !!profile;
 
-  const { data: profitRows } = await supabase
-    .from("community_posts")
-    .select(
-      "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,likes_boost,comments_count,is_pinned,created_at"
-    )
-    .eq("post_type", "profit_proof")
-    .order("is_pinned", { ascending: false })
-    .order("created_at", { ascending: false })
-    .returns<PostRow[]>();
+  const profitRows = sortPosts(
+    allPostsRaw.filter((p) => p.post_type === "profit_proof")
+  );
 
   let strategyRows: PostRow[] | null = null;
   if (loggedIn) {
-    const { data } = await supabase
-      .from("community_posts")
-      .select(
-        "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,likes_boost,comments_count,is_pinned,created_at"
-      )
-      .eq("post_type", "strategy_share")
-      .order("is_pinned", { ascending: false })
-      .order("created_at", { ascending: false })
-      .returns<PostRow[]>();
-    strategyRows = data ?? [];
+    strategyRows = sortPosts(
+      allPostsRaw.filter((p) => p.post_type === "strategy_share")
+    );
   }
 
   // 전체보기 탭 — 수익인증 + 매매법공유를 합쳐서 고정글 우선, 그다음 최신순으로 보여줘요.
   // (비로그인이면 매매법공유는 원래 못 보니까 수익인증만 있는 profitRows를 그대로 써요)
-  let allRows: PostRow[];
-  if (loggedIn) {
-    const { data } = await supabase
-      .from("community_posts")
-      .select(
-        "id,post_type,author_id,content,screenshot_url,profit_rate,likes_count,likes_boost,comments_count,is_pinned,created_at"
-      )
-      .order("is_pinned", { ascending: false })
-      .order("created_at", { ascending: false })
-      .returns<PostRow[]>();
-    allRows = data ?? [];
-  } else {
-    allRows = profitRows ?? [];
-  }
+  const allRows: PostRow[] = loggedIn ? sortPosts(allPostsRaw) : profitRows;
 
   const authorIds = Array.from(
     new Set([

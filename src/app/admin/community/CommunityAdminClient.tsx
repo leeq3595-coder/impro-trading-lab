@@ -4,9 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
+import { revalidatePublicData } from "@/lib/publicDataActions";
 import { MediaUploader } from "@/components/MediaUploader";
 import { ContentEditor } from "@/components/ContentEditor";
 import { BoldTextarea } from "@/components/BoldTextarea";
+
+const COMMUNITY_CACHE_TAGS = [
+  "public-community-posts",
+  "public-community-post-by-id",
+];
 
 type PostRow = {
   id: string;
@@ -154,6 +160,7 @@ export default function CommunityAdminClient({
       setForm(EMPTY_FORM);
       setEditingId(null);
       await load();
+      await revalidatePublicData(COMMUNITY_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
@@ -170,6 +177,7 @@ export default function CommunityAdminClient({
         .eq("id", row.id);
       if (error) throw error;
       await load();
+      await revalidatePublicData(COMMUNITY_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
@@ -199,6 +207,7 @@ export default function CommunityAdminClient({
         delete next[row.id];
         return next;
       });
+      await revalidatePublicData(COMMUNITY_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
@@ -217,6 +226,7 @@ export default function CommunityAdminClient({
         .eq("id", row.id);
       if (error) throw error;
       setRows((prev) => prev.filter((r) => r.id !== row.id));
+      await revalidatePublicData(COMMUNITY_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "삭제 중 오류가 발생했어요."));
     } finally {

@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
+import { revalidatePublicData } from "@/lib/publicDataActions";
+
+const NOTICE_CACHE_TAGS = ["public-pinned-notice"];
 
 type NoticeRow = {
   id: string;
@@ -96,6 +99,7 @@ export default function NoticesClient({ adminId }: { adminId: string }) {
       setForm(EMPTY_FORM);
       setEditingId(null);
       await load();
+      await revalidatePublicData(NOTICE_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
@@ -112,6 +116,7 @@ export default function NoticesClient({ adminId }: { adminId: string }) {
         .eq("id", row.id);
       if (error) throw error;
       await load();
+      await revalidatePublicData(NOTICE_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "저장 중 오류가 발생했어요."));
     } finally {
@@ -130,6 +135,7 @@ export default function NoticesClient({ adminId }: { adminId: string }) {
         .eq("id", row.id);
       if (error) throw error;
       setRows((prev) => prev.filter((r) => r.id !== row.id));
+      await revalidatePublicData(NOTICE_CACHE_TAGS);
     } catch (e) {
       setError(clientErrorMessage(e, "삭제 중 오류가 발생했어요."));
     } finally {

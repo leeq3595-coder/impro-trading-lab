@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
+import { getCommunityPostById } from "@/lib/publicData";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 import { LikeButton } from "@/components/LikeButton";
@@ -18,16 +19,15 @@ export default async function CommunityDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const profile = await getCurrentProfile();
-  const loggedIn = !!profile;
 
-  const { data: post } = await supabase
-    .from("community_posts")
-    .select(
-      "id,post_type,author_id,title,content,symbol,trade_count,seed_amount,profit_amount,profit_rate,screenshot_url,likes_count,likes_boost,comments_count,is_pinned,created_at"
-    )
-    .eq("id", id)
-    .maybeSingle();
+  // 로그인 확인이랑 게시글 조회는 서로 관계없는 요청이라 동시에 보내요.
+  // 게시글 조회 자체는 캐시된 공개 데이터라 대부분 DB를 다시 안 맞고 바로
+  // 나가요.
+  const [profile, post] = await Promise.all([
+    getCurrentProfile(),
+    getCommunityPostById(id),
+  ]);
+  const loggedIn = !!profile;
 
   if (!post) notFound();
 
@@ -62,37 +62,41 @@ export default async function CommunityDetailPage({
     );
   }
 
+  // 작성자 닉네임 / 좋아요 여부 / 댓글 목록은 서로 관계없는 요청이라
+  // 한꺼번에 보내요. 비로그인이면 좋아요 여부 조회는 건너뛰어요.
+  const [authorResult, likeResult, commentsResult] = await Promise.all([
+    supabase
+      .from("public_profiles")
+      .select("nickname")
+      .eq("id", post.author_id)
+      .maybeSingle(),
+    profile
+      ? supabase
+          .from("likes")
+          .select("id")
+          .eq("parent_type", "community_post")
+          .eq("parent_id", id)
+          .eq("user_id", profile.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { id: string } | null }),
+    supabase
+      .from("comments")
+      .select("id,author_id,content,created_at")
+      .eq("parent_type", "community_post")
+      .eq("parent_id", id)
+      .order("created_at", { ascending: true }),
+  ]);
+
   let authorNickname = "회원";
-  const { data: author } = await supabase
-    .from("public_profiles")
-    .select("nickname")
-    .eq("id", post.author_id)
-    .maybeSingle();
-  if (author) authorNickname = author.nickname;
+  if (authorResult.data) authorNickname = authorResult.data.nickname;
 
   const dateLabel = new Date(post.created_at)
     .toISOString()
     .slice(0, 10)
     .replace(/-/g, ".");
 
-  let liked = false;
-  if (profile) {
-    const { data: likeRow } = await supabase
-      .from("likes")
-      .select("id")
-      .eq("parent_type", "community_post")
-      .eq("parent_id", id)
-      .eq("user_id", profile.id)
-      .maybeSingle();
-    liked = !!likeRow;
-  }
-
-  const { data: commentRows } = await supabase
-    .from("comments")
-    .select("id,author_id,content,created_at")
-    .eq("parent_type", "community_post")
-    .eq("parent_id", id)
-    .order("created_at", { ascending: true });
+  const liked = !!likeResult.data;
+  const { data: commentRows } = commentsResult;
 
   const commentAuthorIds = Array.from(
     new Set((commentRows ?? []).map((c) => c.author_id))

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
+import { getColumnById, getAllLinkSettings } from "@/lib/publicData";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 import { RichContent } from "@/components/RichContent";
@@ -19,16 +20,11 @@ export default async function ColumnDetailPage({
   const supabase = await createClient();
 
   // 로그인 확인이랑 칼럼 조회는 서로 관계없는 요청이라 동시에 보내요
-  // (하나씩 순서대로 기다리면 왕복 시간이 그대로 더해져서 느려져요).
-  const [profile, { data: column }] = await Promise.all([
+  // (하나씩 순서대로 기다리면 왕복 시간이 그대로 더해져서 느려져요). 칼럼
+  // 조회 자체는 캐시된 공개 데이터라 대부분 DB를 다시 안 맞고 바로 나가요.
+  const [profile, column] = await Promise.all([
     getCurrentProfile(),
-    supabase
-      .from("columns")
-      .select(
-        "id,title,category,is_vip,is_hidden,content,cover_image_url,author_id,published_at,likes_count"
-      )
-      .eq("id", id)
-      .maybeSingle(),
+    getColumnById(id),
   ]);
   const loggedIn = !!profile;
 
@@ -107,19 +103,17 @@ export default async function ColumnDetailPage({
 
   // 여기서부터는 서로 관계없는 요청 3개(작성자 닉네임 / 소통방 링크 / 스크랩
   // 여부)를 한꺼번에 보내요. 필요 없는 건(랜딩이 아니면 링크, 비로그인이거나
-  // 랜딩이면 스크랩) 아예 요청 자체를 안 보내게 건너뛰어요.
-  const [authorResult, linksResult, scrapResult] = await Promise.all([
+  // 랜딩이면 스크랩) 아예 요청 자체를 안 보내게 건너뛰어요. 링크는 캐시된
+  // 공개 데이터라 대부분 DB를 다시 안 맞고 바로 나가요.
+  const [authorResult, links, scrapResult] = await Promise.all([
     supabase
       .from("public_profiles")
       .select("nickname")
       .eq("id", column.author_id)
       .maybeSingle(),
     isLanding
-      ? supabase
-          .from("link_settings")
-          .select("link_key,url")
-          .in("link_key", ["community_chat", "vip_signal_telegram"])
-      : Promise.resolve({ data: null as { link_key: string; url: string }[] | null }),
+      ? getAllLinkSettings()
+      : Promise.resolve([] as { link_key: string; url: string }[]),
     profile && !isLanding
       ? supabase
           .from("scraps")
@@ -140,9 +134,7 @@ export default async function ColumnDetailPage({
 
   let communityUrl = "/signup";
   if (isLanding) {
-    const byKey = new Map(
-      (linksResult.data ?? []).map((l) => [l.link_key, l.url])
-    );
+    const byKey = new Map(links.map((l) => [l.link_key, l.url]));
     communityUrl =
       byKey.get("community_chat") ||
       byKey.get("vip_signal_telegram") ||

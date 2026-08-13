@@ -1,22 +1,12 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
+import { getPublishedColumns } from "@/lib/publicData";
 import { BottomNav } from "@/components/BottomNav";
 import { GatedLink } from "@/components/GatedLink";
 import { SafeThumb } from "@/components/SafeThumb";
 
 export const revalidate = 0;
-
-type ColumnRow = {
-  id: string;
-  title: string;
-  category: string;
-  is_vip: boolean;
-  is_pinned: boolean;
-  author_id: string;
-  cover_image_url: string | null;
-  published_at: string;
-};
 
 function timeAgo(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -34,19 +24,11 @@ export default async function ColumnsPage() {
   const supabase = await createClient();
 
   // 로그인 확인이랑 칼럼 목록 조회는 서로 관계없는 요청이라 동시에 보내요
-  // (하나씩 순서대로 기다리면 왕복 시간이 그대로 더해져서 느려져요).
-  const [profile, { data: columns }] = await Promise.all([
+  // (하나씩 순서대로 기다리면 왕복 시간이 그대로 더해져요). 칼럼 목록
+  // 자체는 캐시된 공개 데이터라 대부분 DB를 다시 안 맞고 바로 나가요.
+  const [profile, columns] = await Promise.all([
     getCurrentProfile(),
-    supabase
-      .from("columns")
-      .select(
-        "id,title,category,is_vip,is_pinned,author_id,cover_image_url,published_at"
-      )
-      .eq("is_published", true)
-      .eq("is_hidden", false)
-      .order("is_pinned", { ascending: false })
-      .order("published_at", { ascending: false })
-      .returns<ColumnRow[]>(),
+    getPublishedColumns(),
   ]);
   const loggedIn = !!profile;
 
