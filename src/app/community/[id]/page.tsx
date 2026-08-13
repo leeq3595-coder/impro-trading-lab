@@ -1,19 +1,56 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
-import { getCommunityPostById } from "@/lib/publicData";
+import { getColumnById, getAllLinkSettings } from "@/lib/publicData";
+import { excerptFromContent } from "@/lib/ogText";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
-import { LikeButton } from "@/components/LikeButton";
-import { PostOwnerActions } from "@/components/community/PostOwnerActions";
-import { CommentsSection, type CommentItem } from "@/components/CommentsSection";
 import { RichContent } from "@/components/RichContent";
+import { ScrapButton } from "@/components/ScrapButton";
 import { SafeThumb } from "@/components/SafeThumb";
+import Link from "next/link";
 
 export const revalidate = 0;
 
-export default async function CommunityDetailPage({
+// 카카오톡 등에 칼럼 링크를 공유했을 때 뜨는 미리보기(제목·설명·이미지)예요.
+// 칼럼은 비회원도 볼 수 있어서, 클릭을 유도할 수 있게 실제 제목/표지이미지를
+// 그대로 써요. VIP 칼럼은 잠금 표시를 살짝 섞어서 궁금증을 자극해요.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const column = await getColumnById(id);
+  if (!column) return {};
+
+  const title = column.is_vip
+    ? `🔒 [VIP] ${column.title} - 임프로트레이딩랩`
+    : `${column.title} - 임프로트레이딩랩`;
+  const description = excerptFromContent(column.content);
+  const image = column.cover_image_url || "/profile-logo.jpg";
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/columns/${id}`,
+      type: "article",
+      images: [{ url: image, width: 1200, height: 630, alt: column.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
+}
+
+export default async function ColumnDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -21,35 +58,40 @@ export default async function CommunityDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  // 로그인 확인이랑 게시글 조회는 서로 관계없는 요청이라 동시에 보내요.
-  // 게시글 조회 자체는 캐시된 공개 데이터라 대부분 DB를 다시 안 맞고 바로
-  // 나가요.
-  const [profile, post] = await Promise.all([
+  // 로그인 확인이랑 칼럼 조회는 서로 관계없는 요청이라 동시에 보내요
+  // (하나씩 순서대로 기다리면 왕복 시간이 그대로 더해져서 느려져요). 칼럼
+  // 조회 자체는 캐시된 공개 데이터라 대부분 DB를 다시 안 맞고 바로 나가요.
+  const [profile, column] = await Promise.all([
     getCurrentProfile(),
-    getCommunityPostById(id),
+    getColumnById(id),
   ]);
   const loggedIn = !!profile;
 
-  if (!post) notFound();
+  if (!column) notFound();
 
-  if (post.post_type === "strategy_share" && !loggedIn) {
+  const isLanding = column.is_hidden;
+
+  // 비로그인 상태에서 VIP 칼럼 직접 접근 → 가입유도 팝업 + 잠금 화면
+  if (column.is_vip && !loggedIn) {
     return (
       <main className="min-h-screen bg-[#05070d] pb-24">
-        <AutoGate message="매매법공유는 회원만 볼 수 있어요. 간편가입하고 확인해보세요." />
-        <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
-          <Link href="/community" className="text-sm text-[#93a0b8]">
-            ← 커뮤니티
-          </Link>
-        </header>
+        <AutoGate message="VIP 칼럼은 회원만 볼 수 있어요. 간편가입하고 바로 확인해보세요." />
+        {!isLanding && (
+          <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+            <Link href="/columns" className="text-sm text-[#93a0b8]">
+              ← 칼럼
+            </Link>
+          </header>
+        )}
         <div className="mx-auto max-w-md px-4 py-16 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#38bdf8] to-[#3b82f6] text-2xl">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f6d888] to-[#e8b94b] text-2xl">
             🔒
           </div>
           <h1 className="mb-2 text-lg font-bold text-white">
-            매매법공유는 회원 전용이에요
+            VIP 전용 칼럼이에요
           </h1>
           <p className="mb-6 text-sm text-[#93a0b8]">
-            간편가입하고 다른 회원들의 매매법을 확인해보세요.
+            간편가입하고 VIP 칼럼을 바로 확인해보세요.
           </p>
           <Link
             href="/signup"
@@ -58,194 +100,180 @@ export default async function CommunityDetailPage({
             간편가입하기
           </Link>
         </div>
-        <BottomNav loggedIn={loggedIn} />
+        {!isLanding && <BottomNav loggedIn={loggedIn} />}
       </main>
     );
   }
 
-  // 작성자 닉네임 / 좋아요 여부 / 댓글 목록은 서로 관계없는 요청이라
-  // 한꺼번에 보내요. 비로그인이면 좋아요 여부 조회는 건너뛰어요.
-  const [authorResult, likeResult, commentsResult] = await Promise.all([
+  // 로그인은 했지만 VIP 회원이 아닌 경우
+  if (column.is_vip && loggedIn && !profile?.is_vip) {
+    return (
+      <main className="min-h-screen bg-[#05070d] pb-24">
+        {!isLanding && (
+          <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+            <Link href="/columns" className="text-sm text-[#93a0b8]">
+              ← 칼럼
+            </Link>
+          </header>
+        )}
+        <div className="mx-auto max-w-md px-4 py-16 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f6d888] to-[#e8b94b] text-2xl">
+            🔒
+          </div>
+          <h1 className="mb-2 text-lg font-bold text-white">
+            VIP 전용 칼럼이에요
+          </h1>
+          <p className="mb-6 text-sm text-[#93a0b8]">
+            올림프트레이드 가입 후 관리자 확인이 완료되면
+            <br />
+            VIP 칼럼이 자동으로 열려요.
+          </p>
+          <Link
+            href="/my"
+            className="inline-block rounded-xl bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-6 py-3 font-bold text-[#04101f]"
+          >
+            마이페이지에서 확인하기
+          </Link>
+        </div>
+        {!isLanding && <BottomNav loggedIn={loggedIn} />}
+      </main>
+    );
+  }
+
+  // 여기서부터는 서로 관계없는 요청 3개(작성자 닉네임 / 소통방 링크 / 스크랩
+  // 여부)를 한꺼번에 보내요. 필요 없는 건(랜딩이 아니면 링크, 비로그인이거나
+  // 랜딩이면 스크랩) 아예 요청 자체를 안 보내게 건너뛰어요. 링크는 캐시된
+  // 공개 데이터라 대부분 DB를 다시 안 맞고 바로 나가요.
+  const [authorResult, links, scrapResult] = await Promise.all([
     supabase
       .from("public_profiles")
       .select("nickname")
-      .eq("id", post.author_id)
+      .eq("id", column.author_id)
       .maybeSingle(),
-    profile
+    isLanding
+      ? getAllLinkSettings()
+      : Promise.resolve([] as { link_key: string; url: string }[]),
+    profile && !isLanding
       ? supabase
-          .from("likes")
+          .from("scraps")
           .select("id")
-          .eq("parent_type", "community_post")
-          .eq("parent_id", id)
+          .eq("column_id", column.id)
           .eq("user_id", profile.id)
           .maybeSingle()
       : Promise.resolve({ data: null as { id: string } | null }),
-    supabase
-      .from("comments")
-      .select("id,author_id,content,created_at")
-      .eq("parent_type", "community_post")
-      .eq("parent_id", id)
-      .order("created_at", { ascending: true }),
   ]);
 
-  let authorNickname = "회원";
+  let authorNickname = "임쁘로";
   if (authorResult.data) authorNickname = authorResult.data.nickname;
 
-  const dateLabel = new Date(post.created_at)
+  const dateLabel = new Date(column.published_at)
     .toISOString()
     .slice(0, 10)
     .replace(/-/g, ".");
 
-  const liked = !!likeResult.data;
-  const { data: commentRows } = commentsResult;
+  let communityUrl = "/signup";
+  if (isLanding) {
+    const byKey = new Map(links.map((l) => [l.link_key, l.url]));
+    communityUrl =
+      byKey.get("community_chat") ||
+      byKey.get("vip_signal_telegram") ||
+      "/signup";
+  }
 
-  const commentAuthorIds = Array.from(
-    new Set((commentRows ?? []).map((c) => c.author_id))
-  );
-  let commentNicknameById = new Map<string, string>();
-  if (commentAuthorIds.length > 0) {
-    const { data: commentAuthors } = await supabase
-      .from("public_profiles")
-      .select("id,nickname")
-      .in("id", commentAuthorIds);
-    commentNicknameById = new Map(
-      (commentAuthors ?? []).map((a) => [a.id, a.nickname])
+  const scrapped = !!scrapResult.data;
+
+  if (isLanding) {
+    // 히든 랜딩페이지는 노션(Notion) 라이트 스타일 — 앱의 다른 페이지와 달리
+    // 이 화면만 흰 배경 + 어두운 글씨로 가독성을 최대화해요.
+    return (
+      <main className="min-h-screen bg-white pb-28">
+        <header className="flex items-center justify-center border-b border-[#eeeeec] bg-white px-4 py-3">
+          <span className="text-sm font-bold text-[#111111]">
+            임프로<span className="text-[#2f6feb]">트레이딩랩</span>
+          </span>
+        </header>
+        <article className="mx-auto max-w-md px-5 py-7">
+          <span className="mb-3 inline-block rounded-full bg-[#eef3fe] px-2.5 py-1 text-[11px] font-bold text-[#2f6feb]">
+            {column.category}
+          </span>
+          <h1 className="mb-3 text-2xl font-bold leading-snug text-[#111111]">
+            {column.title}
+          </h1>
+          <div className="mb-6 flex items-center gap-2 text-xs text-[#787774]">
+            <span className="h-6 w-6 rounded-full bg-[#eeeeec]" />
+            {authorNickname} · {dateLabel}
+            <span className="ml-auto flex items-center gap-1 text-[#787774]">
+              ❤️ {column.likes_count ?? 0}
+            </span>
+          </div>
+          <SafeThumb
+            src={column.cover_image_url}
+            className="mb-6 w-full rounded-xl border border-[#e9e9e7]"
+          />
+          <RichContent
+            content={column.content}
+            theme="light"
+            communityUrl={communityUrl}
+          />
+        </article>
+
+        {/* 하단 고정 CTA 영역 — 흰 배경 위에서도 확실히 눈에 띄도록 계속 진한 톤 유지 */}
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[#eeeeec] bg-[#070b16]/97 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+          <div className="mx-auto flex max-w-md gap-2">
+            <Link
+              href="/columns"
+              className="flex-1 rounded-xl border border-[rgba(96,150,255,0.3)] py-3 text-center text-sm font-bold text-[#c9d3e6]"
+            >
+              다음 칼럼 읽기
+            </Link>
+            <a
+              href={communityUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-[1.4] rounded-xl bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] py-3 text-center text-sm font-bold text-[#04101f]"
+            >
+              👉노른자 소통방 입장하기🔥→
+            </a>
+          </div>
+        </div>
+      </main>
     );
   }
-  const comments: CommentItem[] = (commentRows ?? []).map((c) => ({
-    id: c.id,
-    author_id: c.author_id,
-    authorNickname: commentNicknameById.get(c.author_id) ?? "회원",
-    content: c.content,
-    created_at: c.created_at,
-  }));
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
       <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
-        <Link href="/community" className="text-sm text-[#93a0b8]">
-          ← 커뮤니티
+        <Link href="/columns" className="text-sm text-[#93a0b8]">
+          ← 칼럼
         </Link>
       </header>
       <article className="mx-auto max-w-md px-4 pb-6 pt-[68px]">
-        <div className="mb-3 flex flex-wrap items-center gap-1.5">
-          {post.is_pinned && (
-            <span className="inline-block rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
-              📌 고정
-            </span>
-          )}
-          <span
-            className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-              post.post_type === "profit_proof"
-                ? "bg-[rgba(232,120,75,0.16)] text-[#f6a97e]"
-                : "bg-[rgba(96,150,255,0.16)] text-[#8fb3ff]"
-            }`}
-          >
-            {post.post_type === "profit_proof" ? "🔥 수익인증" : "📘 매매법공유"}
+        <div className="mb-2 flex items-start justify-between gap-3">
+          <span className="inline-block rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
+            {column.category}
+          </span>
+          <ScrapButton
+            columnId={column.id}
+            userId={profile?.id ?? null}
+            initialScrapped={scrapped}
+          />
+        </div>
+        <h1 className="mb-2 text-xl font-bold leading-snug text-white">
+          {column.title}
+        </h1>
+        <div className="mb-4 flex items-center gap-2 text-xs text-[#5f6b82]">
+          {authorNickname} · {dateLabel}
+          <span className="ml-auto flex items-center gap-1 text-[#93a0b8]">
+            ❤️ {column.likes_count ?? 0}
           </span>
         </div>
-        <div className="mb-4 flex items-center gap-2">
-          <span className="h-8 w-8 rounded-full bg-[#243352]" />
-          <div>
-            <div className="text-sm font-bold text-white">
-              {authorNickname}
-            </div>
-            <div className="text-[11px] text-[#5f6b82]">{dateLabel}</div>
-          </div>
-        </div>
-
-        {profile?.id === post.author_id && (
-          <PostOwnerActions postId={post.id} />
-        )}
-
-        {post.title && (
-          <h1 className="mb-3 text-lg font-bold text-white">{post.title}</h1>
-        )}
-
-        {post.post_type === "profit_proof" && (
-          <div className="mb-4 grid grid-cols-3 gap-2">
-            <StatBox label="종목" value={post.symbol ?? "-"} />
-            <StatBox
-              label="수익률"
-              value={post.profit_rate != null ? `+${post.profit_rate}%` : "-"}
-              highlight
-            />
-            <StatBox label="매매횟수" value={`${post.trade_count ?? 0}회`} />
-          </div>
-        )}
-
-        {post.post_type === "profit_proof" &&
-          (() => {
-            const images =
-              post.screenshot_urls && post.screenshot_urls.length > 0
-                ? post.screenshot_urls
-                : post.screenshot_url
-                  ? [post.screenshot_url]
-                  : [];
-            if (images.length === 0) return null;
-            return (
-              <div
-                className={`mb-4 grid gap-2 ${
-                  images.length === 1 ? "grid-cols-1" : "grid-cols-2"
-                }`}
-              >
-                {images.map((src, i) => (
-                  <SafeThumb
-                    key={src + i}
-                    src={src}
-                    alt={`인증 스크린샷 ${i + 1}`}
-                    className="aspect-square w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
-                  />
-                ))}
-              </div>
-            );
-          })()}
-
-        {post.content && <RichContent content={post.content} />}
-
-        <div className="mt-6 flex items-center gap-3">
-          <LikeButton
-            postId={post.id}
-            userId={profile?.id ?? null}
-            initialLiked={liked}
-            initialCount={post.likes_count + (post.likes_boost ?? 0)}
-          />
-          <span className="text-sm text-[#93a0b8]">💬 {post.comments_count}</span>
-        </div>
-
-        <CommentsSection
-          parentType="community_post"
-          parentId={post.id}
-          path={`/community/${post.id}`}
-          loggedIn={loggedIn}
-          currentUserId={profile?.id ?? null}
-          comments={comments}
+        <SafeThumb
+          src={column.cover_image_url}
+          className="mb-4 w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
         />
+        <RichContent content={column.content} />
       </article>
       <BottomNav loggedIn={loggedIn} />
     </main>
-  );
-}
-
-function StatBox({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="rounded-xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-3 text-center">
-      <div className="mb-0.5 text-[10px] text-[#5f6b82]">{label}</div>
-      <div
-        className={`text-sm font-bold ${
-          highlight ? "text-[#4ade80]" : "text-white"
-        }`}
-      >
-        {value}
-      </div>
-    </div>
   );
 }
