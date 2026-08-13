@@ -1,46 +1,40 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/server";
-import { usernameToAdminEmail } from "@/lib/adminAuth";
+import {
+  usernameToAdminEmail,
+  ADMIN_SETUP_SECRET,
+} from "@/lib/adminAuth";
 import { errorDetail } from "@/lib/errorDetail";
 
-export type BootstrapState = { error: string } | { ok: true } | undefined;
+export type CreateAdminState = { error: string } | { ok: true } | undefined;
 
-export async function bootstrapAdmin(
-  _prevState: BootstrapState,
+export async function createAdminAccount(
+  _prevState: CreateAdminState,
   formData: FormData
-): Promise<BootstrapState> {
+): Promise<CreateAdminState> {
   const username = String(formData.get("username") || "").trim();
   const password = String(formData.get("password") || "");
+  const nickname = String(formData.get("nickname") || "").trim();
+  const setupSecret = String(formData.get("setup_secret") || "");
 
-  if (!username || !password) {
-    return { error: "아이디와 비밀번호를 입력해주세요." };
+  if (!username || !password || !nickname || !setupSecret) {
+    return { error: "모든 항목을 입력해주세요." };
   }
   if (password.length < 4) {
     return { error: "비밀번호는 4자 이상이어야 해요." };
   }
+  // 생성 비밀번호가 틀리면 그 이상 아무것도 진행하지 않아요 — 이 페이지
+  // 주소를 알아내도 이 값을 모르면 관리자 계정을 만들 수 없어요.
+  if (setupSecret !== ADMIN_SETUP_SECRET) {
+    return { error: "생성 비밀번호가 올바르지 않아요." };
+  }
 
   const admin = createAdminClient();
-
-  // 이미 관리자 계정이 하나라도 있으면 더 이상 만들지 못하게 막아요.
-  // (이 setup 페이지는 최초 1회만 쓰고, 그 이후엔 자동으로 잠겨요)
-  const { count, error: countError } = await admin
-    .from("profiles")
-    .select("id", { count: "exact", head: true })
-    .eq("role", "admin");
-
-  if (countError) {
-    console.error("[admin setup] count error:", errorDetail(countError));
-    return { error: `확인 중 오류가 발생했어요: ${errorDetail(countError)}` };
-  }
-  if ((count ?? 0) > 0) {
-    return {
-      error:
-        "이미 관리자 계정이 만들어져 있어요. 보안을 위해 이 페이지는 더 이상 사용할 수 없어요.",
-    };
-  }
-
   const email = usernameToAdminEmail(username);
+  // 회원 페이지 등 닉네임이 노출되는 모든 곳에 "이름(관리자)"로 자동
+  // 표시되게, 닉네임 자체에 접미사를 붙여서 저장해요.
+  const fullNickname = `${nickname}(관리자)`;
 
   let created;
   try {
@@ -48,7 +42,7 @@ export async function bootstrapAdmin(
       email,
       password,
       email_confirm: true,
-      user_metadata: { nickname: `관리자(${username})` },
+      user_metadata: { nickname: fullNickname },
     });
     if (res.error) throw res.error;
     created = res.data;

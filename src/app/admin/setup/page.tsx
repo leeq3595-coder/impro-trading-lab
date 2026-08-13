@@ -1,14 +1,16 @@
 "use client";
 
 import { useActionState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { bootstrapAdmin } from "./actions";
+import { createAdminAccount } from "./actions";
 
 export default function AdminSetupPage() {
   const [state, formAction, pending] = useActionState(
-    bootstrapAdmin,
+    createAdminAccount,
     undefined
   );
+  const [nickname, setNickname] = useState("");
 
   const done = state && "ok" in state;
 
@@ -19,11 +21,11 @@ export default function AdminSetupPage() {
           ADMIN SETUP
         </div>
         <h1 className="mb-1 text-2xl font-bold text-white">
-          최초 관리자 계정 만들기
+          관리자 계정 만들기
         </h1>
         <p className="mb-8 text-sm text-[#93a0b8]">
-          이 페이지는 관리자 계정이 하나도 없을 때 딱 한 번만 사용할 수 있어요.
-          계정을 만들고 나면 자동으로 잠겨요.
+          관리자 생성 비밀번호를 아는 사람만 이 화면에서 관리자 계정을 만들
+          수 있어요. 몇 번이든 다시 와서 새 관리자를 추가할 수 있어요.
         </p>
 
         {done ? (
@@ -43,16 +45,38 @@ export default function AdminSetupPage() {
           <form action={formAction} className="flex flex-col gap-3">
             <input
               name="username"
-              defaultValue="test"
               placeholder="관리자 아이디"
+              autoComplete="off"
               required
               className="rounded-xl border border-[rgba(232,185,75,0.25)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#e8b94b]"
             />
             <input
               name="password"
               type="password"
-              defaultValue="1111"
-              placeholder="비밀번호"
+              placeholder="관리자 비밀번호"
+              autoComplete="new-password"
+              required
+              className="rounded-xl border border-[rgba(232,185,75,0.25)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#e8b94b]"
+            />
+            <input
+              name="nickname"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="관리자 닉네임 (예: 임쁘로)"
+              required
+              className="rounded-xl border border-[rgba(232,185,75,0.25)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#e8b94b]"
+            />
+            {nickname.trim() && (
+              <p className="-mt-1 px-1 text-[11px] text-[#5f6b82]">
+                회원 페이지 등에는 &quot;{nickname.trim()}(관리자)&quot;로
+                표시돼요.
+              </p>
+            )}
+            <input
+              name="setup_secret"
+              type="password"
+              placeholder="관리자 생성 비밀번호"
+              autoComplete="off"
               required
               className="rounded-xl border border-[rgba(232,185,75,0.25)] bg-[#101a30] px-4 py-3 text-white placeholder:text-[#5f6b82] outline-none focus:border-[#e8b94b]"
             />
