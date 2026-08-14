@@ -21,33 +21,53 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const column = await getColumnById(id);
-  if (!column) return {};
+  // ⚠️ 카톡 미리보기가 계속 원인불명으로 실패해서, 여기서 나는 에러를
+  // 무조건 로그로 찍게 해놨어요(Vercel "Logs" 탭에서 "[og-metadata]"로
+  // 검색하면 보여요). 무슨 일이 있어도 페이지 자체는 항상 뜨게, 실패하면
+  // 사이트 기본값이라도 확실히 돌려줘요(완전히 빈 값 대신).
+  try {
+    const { id } = await params;
+    const column = await getColumnById(id);
+    if (!column) {
+      console.error("[og-metadata] column not found for id:", id);
+      return {};
+    }
 
-  const title = column.is_vip
-    ? `🔒 [VIP] ${column.title} - 임프로트레이딩랩`
-    : `${column.title} - 임프로트레이딩랩`;
-  const description = excerptFromContent(column.content);
-  const image = column.cover_image_url || "/profile-logo.jpg";
+    const title = column.is_vip
+      ? `🔒 [VIP] ${column.title} - 임프로트레이딩랩`
+      : `${column.title} - 임프로트레이딩랩`;
+    const description = excerptFromContent(column.content);
+    const image = column.cover_image_url || "/profile-logo.jpg";
 
-  return {
-    title,
-    description,
-    openGraph: {
+    return {
       title,
       description,
-      url: `/columns/${id}`,
-      type: "article",
-      images: [{ url: image, width: 1200, height: 630, alt: column.title }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [image],
-    },
-  };
+      openGraph: {
+        title,
+        description,
+        url: `/columns/${id}`,
+        type: "article",
+        images: [{ url: image, width: 1200, height: 630, alt: column.title }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [image],
+      },
+    };
+  } catch (e) {
+    console.error("[og-metadata] columns/[id] generateMetadata threw:", e);
+    return {
+      title: "임프로 트레이딩랩",
+      description: "임프로 트레이딩랩 — 크립토·트레이딩 교육 및 커뮤니티",
+      openGraph: {
+        title: "임프로 트레이딩랩",
+        description: "임프로 트레이딩랩 — 크립토·트레이딩 교육 및 커뮤니티",
+        images: ["/profile-logo.jpg"],
+      },
+    };
+  }
 }
 
 export default async function ColumnDetailPage({
