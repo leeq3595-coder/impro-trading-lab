@@ -93,7 +93,7 @@ export async function createCommunityPost(
   }
 
   // 새 글이 홈/커뮤니티 목록 캐시에 바로 반영되게 해요.
-  revalidateTag("public-community-posts", { expire: 0 });
+  revalidateTag("public-community-posts");
 
   redirect(`/community/${newId}`);
 }
@@ -175,8 +175,8 @@ export async function updateCommunityPost(
     }
   }
 
-  revalidateTag("public-community-posts", { expire: 0 });
-  revalidateTag("public-community-post-by-id", { expire: 0 });
+  revalidateTag("public-community-posts");
+  revalidateTag("public-community-post-by-id");
 
   redirect(`/community/${postId}`);
 }
@@ -201,8 +201,8 @@ export async function deleteCommunityPost(
     return { error: `삭제 중 오류가 발생했어요: ${errorDetail(error)}` };
   }
 
-  revalidateTag("public-community-posts", { expire: 0 });
-  revalidateTag("public-community-post-by-id", { expire: 0 });
+  revalidateTag("public-community-posts");
+  revalidateTag("public-community-post-by-id");
 
   return {};
 }
