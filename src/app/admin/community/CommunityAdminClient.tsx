@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
 import { revalidatePublicData } from "@/lib/publicDataActions";
 import { MediaUploader } from "@/components/MediaUploader";
-import { ContentEditor } from "@/components/ContentEditor";
+import { RichContentEditor } from "@/components/RichContentEditor";
 import { BoldTextarea } from "@/components/BoldTextarea";
 
 const COMMUNITY_CACHE_TAGS = [
@@ -376,7 +376,7 @@ export default function CommunityAdminClient({
                   placeholder="제목"
                   className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
                 />
-                <ContentEditor
+                <RichContentEditor
                   value={form.content}
                   onChange={(v) => setForm((f) => ({ ...f, content: v }))}
                   placeholder="매매법 내용"
