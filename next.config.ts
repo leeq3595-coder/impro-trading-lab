@@ -1,17 +1,17 @@
 import type { NextConfig } from "next";
 
-// ⭐ 카톡 미리보기가 계속 안 뜨던 진짜 원인이 여기 있었어요 ⭐
+// ⭐ 카톡 미리보기 관련 설정 ⭐
 // Next.js 16은 기본적으로 메타데이터(og:title 등)를 "스트리밍"으로 나중에
-// 붙여요 — 그래서 실제 브라우저(자바스크립트 실행)에서는 결국 잘 보이지만,
-// 카카오톡처럼 자바스크립트를 안 돌리고 그냥 HTML만 긁어가는 "링크 미리보기
-// 봇"은 메타데이터가 붙기 전의 화면만 보게 돼요. Next.js는 구글/트위터/
-// 페이스북/슬랙 등 유명 봇 목록엔 예외를 둬서 그 애들한텐 메타데이터를 다
-// 채운 뒤에 화면을 보내주는데, 카카오톡 봇은 그 기본 목록에 없어서 계속
-// 빈 미리보기만 나왔던 거예요. 아래에 카카오톡(과 네이버/라인 등 다른 국내
-// 메신저) 봇을 추가해서 걔네한테도 완성된 메타데이터를 보내주게 해요.
+// 붙여요 — 실제 브라우저(자바스크립트 실행)에서는 결국 잘 보이지만, 카카오톡
+// 링크 미리보기 봇처럼 자바스크립트를 안 돌리고 HTML만 긁어가는 요청은
+// 메타데이터가 붙기 전 화면만 받게 돼요. 특정 봇 이름 목록으로 예외를 두는
+// 방식(htmlLimitedBots에 정규식 넣기)이 카카오 쪽에선 안 먹혀서, 아예
+// 모든 요청에 대해 메타데이터를 다 채운 뒤에 페이지를 보내도록 확실하게
+// 바꿨어요(/.*/  = 전체 매칭 = "스트리밍 끄기"). 페이지가 아주 살짝(수십~
+// 100ms 정도) 더 걸릴 수 있지만, 링크 미리보기가 100% 확실하게 뜨는 게
+// 훨씬 중요해서 이렇게 했어요.
 const nextConfig: NextConfig = {
-  htmlLimitedBots:
-    /[\w-]+-Google|Google-[\w-]+|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|googleweblight|kakaotalk-scrap|kakaostory|band|line\/|daumoa/i,
+  htmlLimitedBots: /.*/,
 };
 
 export default nextConfig;
