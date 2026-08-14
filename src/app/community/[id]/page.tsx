@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
 import { getCommunityPostById } from "@/lib/publicData";
-import { excerptFromContent } from "@/lib/ogText";
+import { excerptFromContent, toAbsoluteUrl, SITE_URL } from "@/lib/ogText";
+import { OgTags } from "@/components/OgTags";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 import { LikeButton } from "@/components/LikeButton";
@@ -15,77 +15,9 @@ import { SafeThumb } from "@/components/SafeThumb";
 
 export const revalidate = 0;
 
-// 카카오톡 등에 수익인증/매매법공유 링크를 공유했을 때 뜨는 미리보기예요.
-// 수익인증은 종목·수익률을 제목에 바로 노출해서 "얼마나 벌었길래?" 하는
-// 궁금증을 자극하고, 스크린샷을 미리보기 이미지로 써요. 매매법공유는
-// 회원 전용이라 잠금 느낌을 살짝 섞어요.
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-  // ⚠️ columns 쪽이랑 같은 이유로, 여기서 나는 에러도 로그로 찍고
-  // ("[og-metadata]" 로 검색) 실패해도 사이트 기본값은 꼭 돌려줘요.
-  try {
-    const { id } = await params;
-    const post = await getCommunityPostById(id);
-    if (!post) {
-      console.error("[og-metadata] community post not found for id:", id);
-      return {};
-    }
-
-    const isProfitProof = post.post_type === "profit_proof";
-
-    let title: string;
-    if (isProfitProof) {
-      const rate = post.profit_rate != null ? `+${post.profit_rate}%` : "수익";
-      const symbol = post.symbol ? `[${post.symbol}] ` : "";
-      title = `🔥 ${symbol}${rate} 수익인증 - 임프로트레이딩랩`;
-    } else {
-      title = post.title
-        ? `📘 ${post.title} - 임프로트레이딩랩`
-        : "📘 매매법공유 - 임프로트레이딩랩";
-    }
-
-    const description = post.content
-      ? excerptFromContent(post.content)
-      : "임프로트레이딩랩 커뮤니티에서 확인해보세요.";
-
-    const image =
-      (post.screenshot_urls && post.screenshot_urls[0]) ||
-      post.screenshot_url ||
-      "/profile-logo.jpg";
-
-    return {
-      title,
-      description,
-      openGraph: {
-        title,
-        description,
-        url: `/community/${id}`,
-        type: "article",
-        images: [{ url: image, width: 1200, height: 630, alt: title }],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title,
-        description,
-        images: [image],
-      },
-    };
-  } catch (e) {
-    console.error("[og-metadata] community/[id] generateMetadata threw:", e);
-    return {
-      title: "임프로 트레이딩랩",
-      description: "임프로 트레이딩랩 — 크립토·트레이딩 교육 및 커뮤니티",
-      openGraph: {
-        title: "임프로 트레이딩랩",
-        description: "임프로 트레이딩랩 — 크립토·트레이딩 교육 및 커뮤니티",
-        images: ["/profile-logo.jpg"],
-      },
-    };
-  }
-}
+// (예전엔 여기 generateMetadata가 있었는데, 이 배포 환경에서 실행 자체가
+// 안 되는 게 확인돼서 제거했어요. 카톡 미리보기 태그는 이제 공용 OgTags로
+// 페이지 컴포넌트 안에서 직접 렌더링해요. — src/components/OgTags.tsx)
 
 export default async function CommunityDetailPage({
   params,
@@ -106,9 +38,34 @@ export default async function CommunityDetailPage({
 
   if (!post) notFound();
 
+  const isProfitProofOg = post.post_type === "profit_proof";
+  let ogTitle: string;
+  if (isProfitProofOg) {
+    const rate = post.profit_rate != null ? `+${post.profit_rate}%` : "수익";
+    const symbol = post.symbol ? `[${post.symbol}] ` : "";
+    ogTitle = `🔥 ${symbol}${rate} 수익인증 - 임프로트레이딩랩`;
+  } else {
+    ogTitle = post.title
+      ? `📘 ${post.title} - 임프로트레이딩랩`
+      : "📘 매매법공유 - 임프로트레이딩랩";
+  }
+  const ogDescription = post.content
+    ? excerptFromContent(post.content)
+    : "임프로트레이딩랩 커뮤니티에서 확인해보세요.";
+  const ogRawImage =
+    (post.screenshot_urls && post.screenshot_urls[0]) ||
+    post.screenshot_url ||
+    null;
+  const ogImage = toAbsoluteUrl(ogRawImage);
+  const ogUrl = `${SITE_URL}/community/${id}`;
+  const ogTags = (
+    <OgTags title={ogTitle} description={ogDescription} image={ogImage} url={ogUrl} />
+  );
+
   if (post.post_type === "strategy_share" && !loggedIn) {
     return (
       <main className="min-h-screen bg-[#05070d] pb-24">
+        {ogTags}
         <AutoGate message="매매법공유는 회원만 볼 수 있어요. 간편가입하고 확인해보세요." />
         <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
           <Link href="/community" className="text-sm text-[#93a0b8]">
@@ -196,6 +153,7 @@ export default async function CommunityDetailPage({
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
+      {ogTags}
       <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <Link href="/community" className="text-sm text-[#93a0b8]">
           ← 커뮤니티
