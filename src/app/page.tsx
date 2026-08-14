@@ -9,12 +9,27 @@ import {
   getPinnedNotice,
   type PublicCommunityPost,
 } from "@/lib/publicData";
+import { SITE_URL, toAbsoluteUrl } from "@/lib/ogText";
+import { OgTags } from "@/components/OgTags";
 import { BottomNav } from "@/components/BottomNav";
 import { GatedLink } from "@/components/GatedLink";
 import { HomeBannerCarousel } from "@/components/HomeBannerCarousel";
 import { SafeThumb } from "@/components/SafeThumb";
 
 export const revalidate = 0;
+
+// 홈은 레이아웃(layout.tsx)에 더 이상 openGraph/twitter 기본값이 없어서,
+// 홈 전용 카톡 미리보기 태그를 여기서 직접 렌더링해요. (자세한 이유는
+// layout.tsx 주석 참고)
+const homeOgTags = (
+  <OgTags
+    title="임프로 트레이딩랩"
+    description="임프로 트레이딩랩 — 크립토·트레이딩 교육 및 커뮤니티"
+    image={toAbsoluteUrl("/profile-logo.jpg")}
+    url={SITE_URL}
+    type="website"
+  />
+);
 
 type PostRow = PublicCommunityPost;
 
@@ -101,6 +116,7 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
+      {homeOgTags}
       {/* 헤더 — 모바일 사파리에서 sticky가 배너 위로 겹쳐 보이는 문제가 있어서
           fixed로 바꾸고, 아래 콘텐츠 영역에 그만큼 여백(pt)을 줬어요. */}
       <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] flex items-center justify-between border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
