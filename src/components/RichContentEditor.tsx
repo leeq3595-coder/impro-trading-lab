@@ -283,20 +283,23 @@ export function RichContentEditor({
   // 글씨크기 버튼이랑 똑같은 방식(직접 DOM 감싸기)으로 통일해서 더 확실하게
   // 동작하게 했어요.
   function handleBold() {
-    restoreSelection();
-    const sel = window.getSelection();
-    const editor = editorRef.current;
-    if (!sel || sel.rangeCount === 0 || !editor) {
-      setError("먼저 굵게 할 글자를 드래그해서 선택한 다음 눌러주세요.");
-      return;
-    }
-    const range = sel.getRangeAt(0);
-    if (range.collapsed) {
-      setError("먼저 굵게 할 글자를 드래그해서 선택한 다음 눌러주세요.");
-      return;
-    }
-    setError(null);
+    // 이 함수 전체를 try/catch로 감싸서, 어떤 이유로든(오래된 선택 범위가
+    // 이미 사라진 DOM을 가리키고 있는 경우 등) 중간에 에러가 나도 화면에
+    // 아무 반응 없이 조용히 실패하지 않고 꼭 에러 문구가 뜨게 해요.
     try {
+      restoreSelection();
+      const sel = window.getSelection();
+      const editor = editorRef.current;
+      if (!sel || sel.rangeCount === 0 || !editor) {
+        setError("먼저 굵게 할 글자를 드래그해서 선택한 다음 눌러주세요.");
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      if (range.collapsed) {
+        setError("먼저 굵게 할 글자를 드래그해서 선택한 다음 눌러주세요.");
+        return;
+      }
+      setError(null);
       if (isRangeFullyBold(range, editor)) {
         const bolds = Array.from(editor.querySelectorAll("b, strong"));
         bolds.forEach((b) => {
@@ -328,21 +331,22 @@ export function RichContentEditor({
   // (커서만 있고 아무것도 선택 안 했으면 아무 일도 안 일어나요 — 먼저
   // 글자를 드래그해서 선택해야 해요)
   function handleSize(key: SizeKey | "n") {
-    restoreSelection();
-    const sel = window.getSelection();
-    const editor = editorRef.current;
-    if (!sel || sel.rangeCount === 0 || !editor) {
-      setError("먼저 크기를 바꿀 글자를 드래그해서 선택한 다음 눌러주세요.");
-      return;
-    }
-    const range = sel.getRangeAt(0);
-    if (range.collapsed) {
-      setError("먼저 크기를 바꿀 글자를 드래그해서 선택한 다음 눌러주세요.");
-      return;
-    }
-    setError(null);
-
+    // handleBold랑 같은 이유로, 함수 전체를 try/catch로 감싸요.
     try {
+      restoreSelection();
+      const sel = window.getSelection();
+      const editor = editorRef.current;
+      if (!sel || sel.rangeCount === 0 || !editor) {
+        setError("먼저 크기를 바꿀 글자를 드래그해서 선택한 다음 눌러주세요.");
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      if (range.collapsed) {
+        setError("먼저 크기를 바꿀 글자를 드래그해서 선택한 다음 눌러주세요.");
+        return;
+      }
+      setError(null);
+
       if (key === "n") {
         const spans = Array.from(editor.querySelectorAll("span[data-size]"));
         spans.forEach((span) => {
@@ -421,7 +425,6 @@ export function RichContentEditor({
       <div className="flex flex-wrap items-center gap-2 border-t border-[rgba(96,150,255,0.12)] pt-1.5">
         <button
           type="button"
-          onMouseDown={(e) => e.preventDefault()}
           onClick={handleBold}
           title="선택한 글자를 굵게 (Ctrl/Cmd+B)"
           className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-bold text-[#93a0b8]"
@@ -431,7 +434,6 @@ export function RichContentEditor({
         <span className="text-[11px] text-[#5f6b82]">글씨크기:</span>
         <button
           type="button"
-          onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleSize("s")}
           className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1 text-[11px] text-[#93a0b8]"
         >
@@ -439,7 +441,6 @@ export function RichContentEditor({
         </button>
         <button
           type="button"
-          onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleSize("n")}
           className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs text-[#93a0b8]"
         >
@@ -447,7 +448,6 @@ export function RichContentEditor({
         </button>
         <button
           type="button"
-          onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleSize("l")}
           className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-2 text-sm text-[#93a0b8]"
         >
@@ -455,7 +455,6 @@ export function RichContentEditor({
         </button>
         <button
           type="button"
-          onMouseDown={(e) => e.preventDefault()}
           onClick={() => handleSize("xl")}
           className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-2.5 text-base font-semibold text-[#93a0b8]"
         >
