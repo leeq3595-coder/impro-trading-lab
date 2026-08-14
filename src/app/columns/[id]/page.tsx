@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
 import { getColumnById, getAllLinkSettings } from "@/lib/publicData";
 import { excerptFromContent, toAbsoluteUrl, SITE_URL } from "@/lib/ogText";
+import { OgTags } from "@/components/OgTags";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 import { RichContent } from "@/components/RichContent";
@@ -12,48 +13,9 @@ import Link from "next/link";
 
 export const revalidate = 0;
 
-// ⭐ 카톡 미리보기용 태그를 generateMetadata 대신 페이지 컴포넌트 안에서
-// 직접 <title>/<meta> 태그로 렌더링해요. (원인 불명으로 generateMetadata가
-// 이 배포 환경에서 실행이 안 되는 문제가 있어서 — 오래 디버깅했지만 결국
-// generateMetadata/미들웨어(proxy) 둘 다 프로덕션에서 실행 자체가 안 되는
-// 걸 로그로 확인했어요.) React 19는 컴포넌트 트리 어디서든 <title>,
-// <meta> 태그를 렌더링하면 자동으로 <head>로 옮겨줘요 — 이건 페이지
-// 컴포넌트 자체(실제로 잘 실행되는 걸 확인한 코드)의 일부라서, 실행 안 되는
-// generateMetadata/proxy에 기대는 것보다 훨씬 안전해요.
-function OgTags({
-  title,
-  description,
-  image,
-  url,
-}: {
-  title: string;
-  description: string;
-  image: string;
-  url: string;
-}) {
-  return (
-    <>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <meta property="og:type" content="article" />
-      <meta property="og:site_name" content="임프로 트레이딩랩" />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:url" content={url} />
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
-    </>
-  );
-}
-
 // (예전엔 여기 generateMetadata가 있었는데, 이 배포 환경에서 실행 자체가
-// 안 되는 게 확인돼서 제거했어요. 카톡 미리보기 태그는 이제 위 OgTags로
-// 페이지 컴포넌트 안에서 직접 렌더링해요.)
+// 안 되는 게 확인돼서 제거했어요. 카톡 미리보기 태그는 이제 공용 OgTags로
+// 페이지 컴포넌트 안에서 직접 렌더링해요. — src/components/OgTags.tsx)
 
 export default async function ColumnDetailPage({
   params,
