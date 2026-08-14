@@ -23,3 +23,14 @@ export function excerptFromContent(content: string, maxLen = 90): string {
   if (!text) return "임프로트레이딩랩에서 확인해보세요.";
   return text.length > maxLen ? text.slice(0, maxLen).trim() + "..." : text;
 }
+
+export const SITE_URL = "https://improtradinglab.com";
+
+// 상대경로(/uploads/xxx.png)든 절대경로(https://...)든 무조건 절대 URL로
+// 만들어줘요. 카카오톡 같은 미리보기 봇은 상대경로 이미지를 못 읽어서
+// og:image는 항상 절대 URL이어야 해요.
+export function toAbsoluteUrl(url: string | null | undefined): string {
+  if (!url) return `${SITE_URL}/profile-logo.jpg`;
+  if (url.startsWith("http")) return url;
+  return `${SITE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
