@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { uploadMediaFile } from "@/lib/uploadMedia";
 import { clientErrorMessage } from "@/lib/clientError";
-import { textToEditorHtml, SIZE_LABEL, type SizeKey } from "@/lib/richInline";
+import { textToEditorHtml, SIZE_LABEL, SIZE_PX, type SizeKey } from "@/lib/richInline";
 
 /**
  * 본문 에디터: 옛날 블로그처럼 갤러리에서 사진 선택 / 바로 촬영 / 붙여넣기(Ctrl+V) /
@@ -47,11 +47,6 @@ export function RichContentEditor({
   const mountedOnceRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // 임시 디버그용 — 버튼을 눌렀을 때 클릭 자체가 리액트까지 전달되는지
-  // 눈으로 바로 확인하려고 넣었어요. 숫자가 안 올라가면 클릭 이벤트 자체가
-  // 안 먹히는 거고(예: 오래된 캐시된 화면), 숫자는 올라가는데 글자가 안
-  // 바뀌면 그건 다른 문제예요.
-  const [clickCount, setClickCount] = useState(0);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -288,7 +283,6 @@ export function RichContentEditor({
   // 글씨크기 버튼이랑 똑같은 방식(직접 DOM 감싸기)으로 통일해서 더 확실하게
   // 동작하게 했어요.
   function handleBold() {
-    setClickCount((n) => n + 1);
     // 이 함수 전체를 try/catch로 감싸서, 어떤 이유로든(오래된 선택 범위가
     // 이미 사라진 DOM을 가리키고 있는 경우 등) 중간에 에러가 나도 화면에
     // 아무 반응 없이 조용히 실패하지 않고 꼭 에러 문구가 뜨게 해요.
@@ -337,7 +331,6 @@ export function RichContentEditor({
   // (커서만 있고 아무것도 선택 안 했으면 아무 일도 안 일어나요 — 먼저
   // 글자를 드래그해서 선택해야 해요)
   function handleSize(key: SizeKey | "n") {
-    setClickCount((n) => n + 1);
     // handleBold랑 같은 이유로, 함수 전체를 try/catch로 감싸요.
     try {
       restoreSelection();
@@ -367,6 +360,12 @@ export function RichContentEditor({
         const frag = range.extractContents();
         const span = document.createElement("span");
         span.setAttribute("data-size", key);
+        // ⭐ 진짜 원인: data-size 속성만 달아놓고 실제 font-size 스타일을
+        // 빼먹어서, 편집창 안에서는 눈에 보이는 변화가 전혀 없었어요(저장되는
+        // 값 자체는 맞았어서 미리보기 화면에서는 정상으로 보였던 거예요).
+        // 굵게는 <b> 태그가 브라우저 기본 스타일(font-weight:bold)을 갖고
+        // 있어서 이 문제가 없었던 거고요.
+        span.style.fontSize = SIZE_PX[key];
         span.appendChild(frag);
         range.insertNode(span);
         const newRange = document.createRange();
@@ -467,12 +466,6 @@ export function RichContentEditor({
         >
           {SIZE_LABEL.xl}
         </button>
-        {/* 임시 디버그 표시 — 문제 다 해결되면 지울게요. 버튼 누른 횟수가
-            여기 숫자로 바로 보여서, 클릭이 아예 안 먹히는 건지 아니면 클릭은
-            되는데 다른 문제인지 스크린샷 한 장으로 바로 구분할 수 있어요. */}
-        <span className="ml-auto rounded-full bg-[rgba(232,185,75,0.15)] px-2.5 py-1 text-[11px] font-bold text-[#f6d888]">
-          디버그: 버튼 {clickCount}번 눌림
-        </span>
       </div>
 
       {/* 갤러리 선택: 캡처 속성 없이 두면 모바일에서 사진/카메라/파일 중 고를 수 있어요 */}
