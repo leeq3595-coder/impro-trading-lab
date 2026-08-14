@@ -8,6 +8,15 @@ import {
 
 // Next.js 16: middleware.ts는 proxy.ts로 이름이 바뀌었어요 (기능은 동일)
 export async function proxy(request: NextRequest) {
+  // ⚠️ proxy(구 미들웨어)가 프로덕션에서 아예 실행되는지부터 확인하려고
+  // 무조건 찍는 로그예요. 봇이든 사람이든 이 경로로 들어오는 모든 요청마다
+  // 찍혀요. Vercel "Logs" 탭에서 "PROXY-CALLED"로 검색해서 확인하세요.
+  console.error(
+    "PROXY-CALLED",
+    request.nextUrl.pathname,
+    "ua=" + (request.headers.get("user-agent") || ""),
+    new Date().toISOString()
+  );
   // ⭐ 카카오톡 등 링크 미리보기 봇 전용 처리 ⭐
   // generateMetadata가 이 프로젝트 배포 환경에서 원인 불명으로 실행이
   // 안 되는 문제가 있어서(오랫동안 로그까지 찍어가며 디버깅했지만 결국
