@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { renderRichInline } from "@/lib/richInline";
 
 // 칼럼 본문 텍스트를 줄 단위로 훑어서, "이미지 URL만 있는 줄"이나
 // "유튜브 링크만 있는 줄"을 만나면 자동으로 이미지/영상으로 렌더링해요.
@@ -103,15 +104,11 @@ function parseBlocks(content: string): Block[] {
   return blocks;
 }
 
-// "**굵게**" 표시를 <strong>으로 바꿔줘요.
+// "**굵게**"/"[l]크게[/l]" 표시를 <strong>/글씨크기 태그로 바꿔줘요.
+// (실제 파싱 로직은 편집기랑 같이 쓰는 src/lib/richInline.tsx에 있어요 —
+// 편집 화면에서 본 그대로 실제 페이지에도 나오게 하려고 로직을 공유해요.)
 function renderInline(text: string, keyPrefix: string): ReactNode[] {
-  const parts = text.split(/(\*\*[^*\n]+\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
-      return <strong key={`${keyPrefix}-${i}`}>{part.slice(2, -2)}</strong>;
-    }
-    return part;
-  });
+  return renderRichInline(text, keyPrefix);
 }
 
 type Theme = "dark" | "light";
