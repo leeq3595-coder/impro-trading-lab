@@ -1,9 +1,8 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
 import { getColumnById, getAllLinkSettings } from "@/lib/publicData";
-import { excerptFromContent } from "@/lib/ogText";
+import { excerptFromContent, toAbsoluteUrl, SITE_URL } from "@/lib/ogText";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 import { RichContent } from "@/components/RichContent";
@@ -13,65 +12,48 @@ import Link from "next/link";
 
 export const revalidate = 0;
 
-// 카카오톡 등에 칼럼 링크를 공유했을 때 뜨는 미리보기(제목·설명·이미지)예요.
-// 칼럼은 비회원도 볼 수 있어서, 클릭을 유도할 수 있게 실제 제목/표지이미지를
-// 그대로 써요. VIP 칼럼은 잠금 표시를 살짝 섞어서 궁금증을 자극해요.
-export async function generateMetadata({
-  params,
+// ⭐ 카톡 미리보기용 태그를 generateMetadata 대신 페이지 컴포넌트 안에서
+// 직접 <title>/<meta> 태그로 렌더링해요. (원인 불명으로 generateMetadata가
+// 이 배포 환경에서 실행이 안 되는 문제가 있어서 — 오래 디버깅했지만 결국
+// generateMetadata/미들웨어(proxy) 둘 다 프로덕션에서 실행 자체가 안 되는
+// 걸 로그로 확인했어요.) React 19는 컴포넌트 트리 어디서든 <title>,
+// <meta> 태그를 렌더링하면 자동으로 <head>로 옮겨줘요 — 이건 페이지
+// 컴포넌트 자체(실제로 잘 실행되는 걸 확인한 코드)의 일부라서, 실행 안 되는
+// generateMetadata/proxy에 기대는 것보다 훨씬 안전해요.
+function OgTags({
+  title,
+  description,
+  image,
+  url,
 }: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-  // ⚠️ generateMetadata가 아예 실행되는지부터 확인하려고 무조건 찍는
-  // 로그예요 (Vercel "Logs" 탭에서 "OG-METADATA-CALLED"로 검색).
-  console.error("OG-METADATA-CALLED columns/[id]", new Date().toISOString());
-  // ⚠️ 카톡 미리보기가 계속 원인불명으로 실패해서, 여기서 나는 에러를
-  // 무조건 로그로 찍게 해놨어요(Vercel "Logs" 탭에서 "[og-metadata]"로
-  // 검색하면 보여요). 무슨 일이 있어도 페이지 자체는 항상 뜨게, 실패하면
-  // 사이트 기본값이라도 확실히 돌려줘요(완전히 빈 값 대신).
-  try {
-    const { id } = await params;
-    const column = await getColumnById(id);
-    if (!column) {
-      console.error("[og-metadata] column not found for id:", id);
-      return {};
-    }
-
-    const title = column.is_vip
-      ? `🔒 [VIP] ${column.title} - 임프로트레이딩랩`
-      : `${column.title} - 임프로트레이딩랩`;
-    const description = excerptFromContent(column.content);
-    const image = column.cover_image_url || "/profile-logo.jpg";
-
-    return {
-      title,
-      description,
-      openGraph: {
-        title,
-        description,
-        url: `/columns/${id}`,
-        type: "article",
-        images: [{ url: image, width: 1200, height: 630, alt: column.title }],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title,
-        description,
-        images: [image],
-      },
-    };
-  } catch (e) {
-    console.error("[og-metadata] columns/[id] generateMetadata threw:", e);
-    return {
-      title: "임프로 트레이딩랩",
-      description: "임프로 트레이딩랩 — 크립토·트레이딩 교육 및 커뮤니티",
-      openGraph: {
-        title: "임프로 트레이딩랩",
-        description: "임프로 트레이딩랩 — 크립토·트레이딩 교육 및 커뮤니티",
-        images: ["/profile-logo.jpg"],
-      },
-    };
-  }
+  title: string;
+  description: string;
+  image: string;
+  url: string;
+}) {
+  return (
+    <>
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <meta property="og:type" content="article" />
+      <meta property="og:site_name" content="임프로 트레이딩랩" />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:image" content={image} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:url" content={url} />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={image} />
+    </>
+  );
 }
+
+// (예전엔 여기 generateMetadata가 있었는데, 이 배포 환경에서 실행 자체가
+// 안 되는 게 확인돼서 제거했어요. 카톡 미리보기 태그는 이제 위 OgTags로
+// 페이지 컴포넌트 안에서 직접 렌더링해요.)
 
 export default async function ColumnDetailPage({
   params,
@@ -92,12 +74,23 @@ export default async function ColumnDetailPage({
 
   if (!column) notFound();
 
+  const ogTitle = column.is_vip
+    ? `🔒 [VIP] ${column.title} - 임프로트레이딩랩`
+    : `${column.title} - 임프로트레이딩랩`;
+  const ogDescription = excerptFromContent(column.content);
+  const ogImage = toAbsoluteUrl(column.cover_image_url);
+  const ogUrl = `${SITE_URL}/columns/${id}`;
+  const ogTags = (
+    <OgTags title={ogTitle} description={ogDescription} image={ogImage} url={ogUrl} />
+  );
+
   const isLanding = column.is_hidden;
 
   // 비로그인 상태에서 VIP 칼럼 직접 접근 → 가입유도 팝업 + 잠금 화면
   if (column.is_vip && !loggedIn) {
     return (
       <main className="min-h-screen bg-[#05070d] pb-24">
+        {ogTags}
         <AutoGate message="VIP 칼럼은 회원만 볼 수 있어요. 간편가입하고 바로 확인해보세요." />
         {!isLanding && (
           <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
@@ -132,6 +125,7 @@ export default async function ColumnDetailPage({
   if (column.is_vip && loggedIn && !profile?.is_vip) {
     return (
       <main className="min-h-screen bg-[#05070d] pb-24">
+        {ogTags}
         {!isLanding && (
           <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
             <Link href="/columns" className="text-sm text-[#93a0b8]">
@@ -210,6 +204,7 @@ export default async function ColumnDetailPage({
     // 이 화면만 흰 배경 + 어두운 글씨로 가독성을 최대화해요.
     return (
       <main className="min-h-screen bg-white pb-28">
+        {ogTags}
         <header className="flex items-center justify-center border-b border-[#eeeeec] bg-white px-4 py-3">
           <span className="text-sm font-bold text-[#111111]">
             임프로<span className="text-[#2f6feb]">트레이딩랩</span>
@@ -265,6 +260,7 @@ export default async function ColumnDetailPage({
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
+      {ogTags}
       <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
         <Link href="/columns" className="text-sm text-[#93a0b8]">
           ← 칼럼
