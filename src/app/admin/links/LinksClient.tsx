@@ -14,6 +14,7 @@ export default function LinksClient() {
   const supabase = createClient();
   const [rows, setRows] = useState<LinkRow[]>([]);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [labelDrafts, setLabelDrafts] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -48,8 +49,13 @@ export default function LinksClient() {
 
   async function save(row: LinkRow) {
     const url = drafts[row.link_key] ?? row.url;
+    const label = labelDrafts[row.link_key] ?? row.label;
     if (!url.trim()) {
       setError("URL을 입력해주세요.");
+      return;
+    }
+    if (!label.trim()) {
+      setError("이름을 입력해주세요.");
       return;
     }
     setSavingKey(row.link_key);
@@ -58,12 +64,18 @@ export default function LinksClient() {
     try {
       const { error } = await supabase
         .from("link_settings")
-        .update({ url: url.trim(), updated_at: new Date().toISOString() })
+        .update({
+          url: url.trim(),
+          label: label.trim(),
+          updated_at: new Date().toISOString(),
+        })
         .eq("link_key", row.link_key);
       if (error) throw error;
       setRows((prev) =>
         prev.map((r) =>
-          r.link_key === row.link_key ? { ...r, url: url.trim() } : r
+          r.link_key === row.link_key
+            ? { ...r, url: url.trim(), label: label.trim() }
+            : r
         )
       );
       setSavedKey(row.link_key);
@@ -186,7 +198,16 @@ export default function LinksClient() {
               className="rounded-2xl border border-[rgba(96,150,255,0.18)] bg-[#0b1120] p-4"
             >
               <div className="mb-1 flex items-center gap-2">
-                <span className="font-bold text-white">{r.label}</span>
+                <input
+                  defaultValue={r.label}
+                  onChange={(e) =>
+                    setLabelDrafts((prev) => ({
+                      ...prev,
+                      [r.link_key]: e.target.value,
+                    }))
+                  }
+                  className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-2 py-1 text-sm font-bold text-white outline-none focus:border-[#3b82f6]"
+                />
                 <span className="text-[10px] text-[#5f6b82]">
                   {r.link_key}
                 </span>
