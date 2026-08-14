@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
 import { revalidatePublicData } from "@/lib/publicDataActions";
 import { MediaUploader } from "@/components/MediaUploader";
-import { ContentEditor } from "@/components/ContentEditor";
+import { RichContentEditor } from "@/components/RichContentEditor";
 
 // 히든 랜딩페이지는 목록(칼럼 목록)에는 안 나오고 상세 캐시만 써요.
 const LANDING_CACHE_TAGS = ["public-column-by-id"];
@@ -240,7 +240,7 @@ export default function LandingClient({ adminId }: { adminId: string }) {
                   }
                 />
               </div>
-              <ContentEditor
+              <RichContentEditor
                 value={form.content}
                 onChange={(v) => setForm((f) => ({ ...f, content: v }))}
                 placeholder="본문 내용 (타이틀/작성자/작성일은 자동으로 상단에 표시돼요)"
