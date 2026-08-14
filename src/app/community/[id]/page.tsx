@@ -24,49 +24,67 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const post = await getCommunityPostById(id);
-  if (!post) return {};
+  // ⚠️ columns 쪽이랑 같은 이유로, 여기서 나는 에러도 로그로 찍고
+  // ("[og-metadata]" 로 검색) 실패해도 사이트 기본값은 꼭 돌려줘요.
+  try {
+    const { id } = await params;
+    const post = await getCommunityPostById(id);
+    if (!post) {
+      console.error("[og-metadata] community post not found for id:", id);
+      return {};
+    }
 
-  const isProfitProof = post.post_type === "profit_proof";
+    const isProfitProof = post.post_type === "profit_proof";
 
-  let title: string;
-  if (isProfitProof) {
-    const rate = post.profit_rate != null ? `+${post.profit_rate}%` : "수익";
-    const symbol = post.symbol ? `[${post.symbol}] ` : "";
-    title = `🔥 ${symbol}${rate} 수익인증 - 임프로트레이딩랩`;
-  } else {
-    title = post.title
-      ? `📘 ${post.title} - 임프로트레이딩랩`
-      : "📘 매매법공유 - 임프로트레이딩랩";
+    let title: string;
+    if (isProfitProof) {
+      const rate = post.profit_rate != null ? `+${post.profit_rate}%` : "수익";
+      const symbol = post.symbol ? `[${post.symbol}] ` : "";
+      title = `🔥 ${symbol}${rate} 수익인증 - 임프로트레이딩랩`;
+    } else {
+      title = post.title
+        ? `📘 ${post.title} - 임프로트레이딩랩`
+        : "📘 매매법공유 - 임프로트레이딩랩";
+    }
+
+    const description = post.content
+      ? excerptFromContent(post.content)
+      : "임프로트레이딩랩 커뮤니티에서 확인해보세요.";
+
+    const image =
+      (post.screenshot_urls && post.screenshot_urls[0]) ||
+      post.screenshot_url ||
+      "/profile-logo.jpg";
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        url: `/community/${id}`,
+        type: "article",
+        images: [{ url: image, width: 1200, height: 630, alt: title }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [image],
+      },
+    };
+  } catch (e) {
+    console.error("[og-metadata] community/[id] generateMetadata threw:", e);
+    return {
+      title: "임프로 트레이딩랩",
+      description: "임프로 트레이딩랩 — 크립토·트레이딩 교육 및 커뮤니티",
+      openGraph: {
+        title: "임프로 트레이딩랩",
+        description: "임프로 트레이딩랩 — 크립토·트레이딩 교육 및 커뮤니티",
+        images: ["/profile-logo.jpg"],
+      },
+    };
   }
-
-  const description = post.content
-    ? excerptFromContent(post.content)
-    : "임프로트레이딩랩 커뮤니티에서 확인해보세요.";
-
-  const image =
-    (post.screenshot_urls && post.screenshot_urls[0]) ||
-    post.screenshot_url ||
-    "/profile-logo.jpg";
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      url: `/community/${id}`,
-      type: "article",
-      images: [{ url: image, width: 1200, height: 630, alt: title }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [image],
-    },
-  };
 }
 
 export default async function CommunityDetailPage({
