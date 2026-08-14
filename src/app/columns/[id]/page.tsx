@@ -21,6 +21,9 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
+  // ⚠️ generateMetadata가 아예 실행되는지부터 확인하려고 무조건 찍는
+  // 로그예요 (Vercel "Logs" 탭에서 "OG-METADATA-CALLED"로 검색).
+  console.error("OG-METADATA-CALLED columns/[id]", new Date().toISOString());
   // ⚠️ 카톡 미리보기가 계속 원인불명으로 실패해서, 여기서 나는 에러를
   // 무조건 로그로 찍게 해놨어요(Vercel "Logs" 탭에서 "[og-metadata]"로
   // 검색하면 보여요). 무슨 일이 있어도 페이지 자체는 항상 뜨게, 실패하면
