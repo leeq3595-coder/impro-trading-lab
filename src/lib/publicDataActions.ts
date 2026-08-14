@@ -12,5 +12,5 @@ import { revalidateTag } from "next/cache";
 // tags 옵션과 정확히 같아야 해요.
 export async function revalidatePublicData(tags: string[]) {
   // { expire: 0 } = 즉시 만료(관리자가 저장하자마자 최신 데이터로 갱신).
-  for (const tag of tags) revalidateTag(tag, { expire: 0 });
+  for (const tag of tags) revalidateTag(tag);
 }
