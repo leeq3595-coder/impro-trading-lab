@@ -1,118 +1,318 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
-import { getAllCommunityPosts, type PublicCommunityPost } from "@/lib/publicData";
+import { getCommunityPostById } from "@/lib/publicData";
+import { excerptFromContent, toAbsoluteUrl, SITE_URL } from "@/lib/ogText";
 import { BottomNav } from "@/components/BottomNav";
-import { GatedLink } from "@/components/GatedLink";
-import { CommunityTabs, type CommunityPostCard } from "@/components/CommunityTabs";
+import { AutoGate } from "@/components/AutoGate";
+import { LikeButton } from "@/components/LikeButton";
+import { PostOwnerActions } from "@/components/community/PostOwnerActions";
+import { CommentsSection, type CommentItem } from "@/components/CommentsSection";
+import { RichContent } from "@/components/RichContent";
+import { SafeThumb } from "@/components/SafeThumb";
 
 export const revalidate = 0;
 
-type PostRow = PublicCommunityPost;
-
-function sortPosts(rows: PostRow[]) {
-  return [...rows].sort((a, b) => {
-    if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
-    return (
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-  });
+// ⭐ 카톡 미리보기용 태그를 generateMetadata 대신 페이지 컴포넌트 안에서
+// 직접 <title>/<meta> 태그로 렌더링해요. (columns/[id]와 같은 이유예요 —
+// generateMetadata/proxy 미들웨어 둘 다 이 배포 환경에서 실행 자체가 안
+// 되는 걸 로그로 확인했어요.) React 19는 컴포넌트 트리 어디서든 <title>,
+// <meta> 태그를 렌더링하면 자동으로 <head>로 옮겨줘요.
+function OgTags({
+  title,
+  description,
+  image,
+  url,
+}: {
+  title: string;
+  description: string;
+  image: string;
+  url: string;
+}) {
+  return (
+    <>
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <meta property="og:type" content="article" />
+      <meta property="og:site_name" content="임프로 트레이딩랩" />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:image" content={image} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:url" content={url} />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={image} />
+    </>
+  );
 }
 
-function timeAgo(iso: string) {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(diffMs / 60000);
-  if (min < 1) return "방금 전";
-  if (min < 60) return `${min}분 전`;
-  const hour = Math.floor(min / 60);
-  if (hour < 24) return `${hour}시간 전`;
-  const day = Math.floor(hour / 24);
-  if (day < 7) return `${day}일 전`;
-  return new Date(iso).toISOString().slice(5, 10).replace("-", ".");
-}
+// (예전엔 여기 generateMetadata가 있었는데, 이 배포 환경에서 실행 자체가
+// 안 되는 게 확인돼서 제거했어요. 카톡 미리보기 태그는 이제 위 OgTags로
+// 페이지 컴포넌트 안에서 직접 렌더링해요.)
 
-export default async function CommunityPage() {
+export default async function CommunityDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   const supabase = await createClient();
 
-  // 로그인 확인이랑 게시글 목록 조회는 서로 관계없는 요청이라 동시에 보내요.
-  // 게시글 목록 자체는 캐시된 공개 데이터(수익인증+매매법공유 전부)라 대부분
-  // DB를 다시 안 맞고 바로 나가요 — 탭별 필터링/정렬은 여기서 메모리로 해요.
-  const [profile, allPostsRaw] = await Promise.all([
+  // 로그인 확인이랑 게시글 조회는 서로 관계없는 요청이라 동시에 보내요.
+  // 게시글 조회 자체는 캐시된 공개 데이터라 대부분 DB를 다시 안 맞고 바로
+  // 나가요.
+  const [profile, post] = await Promise.all([
     getCurrentProfile(),
-    getAllCommunityPosts(),
+    getCommunityPostById(id),
   ]);
   const loggedIn = !!profile;
 
-  const profitRows = sortPosts(
-    allPostsRaw.filter((p) => p.post_type === "profit_proof")
+  if (!post) notFound();
+
+  const isProfitProofOg = post.post_type === "profit_proof";
+  let ogTitle: string;
+  if (isProfitProofOg) {
+    const rate = post.profit_rate != null ? `+${post.profit_rate}%` : "수익";
+    const symbol = post.symbol ? `[${post.symbol}] ` : "";
+    ogTitle = `🔥 ${symbol}${rate} 수익인증 - 임프로트레이딩랩`;
+  } else {
+    ogTitle = post.title
+      ? `📘 ${post.title} - 임프로트레이딩랩`
+      : "📘 매매법공유 - 임프로트레이딩랩";
+  }
+  const ogDescription = post.content
+    ? excerptFromContent(post.content)
+    : "임프로트레이딩랩 커뮤니티에서 확인해보세요.";
+  const ogRawImage =
+    (post.screenshot_urls && post.screenshot_urls[0]) ||
+    post.screenshot_url ||
+    null;
+  const ogImage = toAbsoluteUrl(ogRawImage);
+  const ogUrl = `${SITE_URL}/community/${id}`;
+  const ogTags = (
+    <OgTags title={ogTitle} description={ogDescription} image={ogImage} url={ogUrl} />
   );
 
-  let strategyRows: PostRow[] | null = null;
-  if (loggedIn) {
-    strategyRows = sortPosts(
-      allPostsRaw.filter((p) => p.post_type === "strategy_share")
+  if (post.post_type === "strategy_share" && !loggedIn) {
+    return (
+      <main className="min-h-screen bg-[#05070d] pb-24">
+        {ogTags}
+        <AutoGate message="매매법공유는 회원만 볼 수 있어요. 간편가입하고 확인해보세요." />
+        <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+          <Link href="/community" className="text-sm text-[#93a0b8]">
+            ← 커뮤니티
+          </Link>
+        </header>
+        <div className="mx-auto max-w-md px-4 py-16 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#38bdf8] to-[#3b82f6] text-2xl">
+            🔒
+          </div>
+          <h1 className="mb-2 text-lg font-bold text-white">
+            매매법공유는 회원 전용이에요
+          </h1>
+          <p className="mb-6 text-sm text-[#93a0b8]">
+            간편가입하고 다른 회원들의 매매법을 확인해보세요.
+          </p>
+          <Link
+            href="/signup"
+            className="inline-block rounded-xl bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-6 py-3 font-bold text-[#04101f]"
+          >
+            간편가입하기
+          </Link>
+        </div>
+        <BottomNav loggedIn={loggedIn} />
+      </main>
     );
   }
 
-  // 전체보기 탭 — 수익인증 + 매매법공유를 합쳐서 고정글 우선, 그다음 최신순으로 보여줘요.
-  // (비로그인이면 매매법공유는 원래 못 보니까 수익인증만 있는 profitRows를 그대로 써요)
-  const allRows: PostRow[] = loggedIn ? sortPosts(allPostsRaw) : profitRows;
+  // 작성자 닉네임 / 좋아요 여부 / 댓글 목록은 서로 관계없는 요청이라
+  // 한꺼번에 보내요. 비로그인이면 좋아요 여부 조회는 건너뛰어요.
+  const [authorResult, likeResult, commentsResult] = await Promise.all([
+    supabase
+      .from("public_profiles")
+      .select("nickname")
+      .eq("id", post.author_id)
+      .maybeSingle(),
+    profile
+      ? supabase
+          .from("likes")
+          .select("id")
+          .eq("parent_type", "community_post")
+          .eq("parent_id", id)
+          .eq("user_id", profile.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { id: string } | null }),
+    supabase
+      .from("comments")
+      .select("id,author_id,content,created_at")
+      .eq("parent_type", "community_post")
+      .eq("parent_id", id)
+      .order("created_at", { ascending: true }),
+  ]);
 
-  const authorIds = Array.from(
-    new Set([
-      ...(profitRows ?? []).map((p) => p.author_id),
-      ...(strategyRows ?? []).map((p) => p.author_id),
-      ...allRows.map((p) => p.author_id),
-    ])
+  let authorNickname = "회원";
+  if (authorResult.data) authorNickname = authorResult.data.nickname;
+
+  const dateLabel = new Date(post.created_at)
+    .toISOString()
+    .slice(0, 10)
+    .replace(/-/g, ".");
+
+  const liked = !!likeResult.data;
+  const { data: commentRows } = commentsResult;
+
+  const commentAuthorIds = Array.from(
+    new Set((commentRows ?? []).map((c) => c.author_id))
   );
-  let nicknameById = new Map<string, string>();
-  if (authorIds.length > 0) {
-    const { data: authors } = await supabase
+  let commentNicknameById = new Map<string, string>();
+  if (commentAuthorIds.length > 0) {
+    const { data: commentAuthors } = await supabase
       .from("public_profiles")
       .select("id,nickname")
-      .in("id", authorIds);
-    nicknameById = new Map((authors ?? []).map((a) => [a.id, a.nickname]));
+      .in("id", commentAuthorIds);
+    commentNicknameById = new Map(
+      (commentAuthors ?? []).map((a) => [a.id, a.nickname])
+    );
   }
-
-  function toCard(p: PostRow): CommunityPostCard {
-    return {
-      id: p.id,
-      post_type: p.post_type,
-      authorNickname: nicknameById.get(p.author_id) ?? "회원",
-      content: p.content,
-      screenshot_url: p.screenshot_url,
-      screenshot_urls: p.screenshot_urls,
-      profit_rate: p.profit_rate,
-      likes_count: p.likes_count + (p.likes_boost ?? 0),
-      comments_count: p.comments_count,
-      is_pinned: p.is_pinned,
-      timeLabel: timeAgo(p.created_at),
-    };
-  }
+  const comments: CommentItem[] = (commentRows ?? []).map((c) => ({
+    id: c.id,
+    author_id: c.author_id,
+    authorNickname: commentNicknameById.get(c.author_id) ?? "회원",
+    content: c.content,
+    created_at: c.created_at,
+  }));
 
   return (
     <main className="min-h-screen bg-[#05070d] pb-24">
-      <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] flex items-center justify-between border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
-        <h1 className="text-base font-bold text-white">커뮤니티</h1>
-        <GatedLink
-          href="/community/write"
-          loggedIn={loggedIn}
-          message="글쓰기는 로그인 후 이용할 수 있어요."
-          className="rounded-lg bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-3 py-1.5 text-xs font-bold text-[#04101f]"
-        >
-          ✏️ 글쓰기
-        </GatedLink>
+      {ogTags}
+      <header className="fixed inset-x-0 top-0 z-40 [transform:translateZ(0)] border-b border-[rgba(96,150,255,0.12)] bg-[#05070d] px-4 py-3">
+        <Link href="/community" className="text-sm text-[#93a0b8]">
+          ← 커뮤니티
+        </Link>
       </header>
+      <article className="mx-auto max-w-md px-4 pb-6 pt-[68px]">
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          {post.is_pinned && (
+            <span className="inline-block rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+              📌 고정
+            </span>
+          )}
+          <span
+            className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              post.post_type === "profit_proof"
+                ? "bg-[rgba(232,120,75,0.16)] text-[#f6a97e]"
+                : "bg-[rgba(96,150,255,0.16)] text-[#8fb3ff]"
+            }`}
+          >
+            {post.post_type === "profit_proof" ? "🔥 수익인증" : "📘 매매법공유"}
+          </span>
+        </div>
+        <div className="mb-4 flex items-center gap-2">
+          <span className="h-8 w-8 rounded-full bg-[#243352]" />
+          <div>
+            <div className="text-sm font-bold text-white">
+              {authorNickname}
+            </div>
+            <div className="text-[11px] text-[#5f6b82]">{dateLabel}</div>
+          </div>
+        </div>
 
-      <div className="mx-auto max-w-md px-4 pt-[68px]">
-        <CommunityTabs
+        {profile?.id === post.author_id && (
+          <PostOwnerActions postId={post.id} />
+        )}
+
+        {post.title && (
+          <h1 className="mb-3 text-lg font-bold text-white">{post.title}</h1>
+        )}
+
+        {post.post_type === "profit_proof" && (
+          <div className="mb-4 grid grid-cols-3 gap-2">
+            <StatBox label="종목" value={post.symbol ?? "-"} />
+            <StatBox
+              label="수익률"
+              value={post.profit_rate != null ? `+${post.profit_rate}%` : "-"}
+              highlight
+            />
+            <StatBox label="매매횟수" value={`${post.trade_count ?? 0}회`} />
+          </div>
+        )}
+
+        {post.post_type === "profit_proof" &&
+          (() => {
+            const images =
+              post.screenshot_urls && post.screenshot_urls.length > 0
+                ? post.screenshot_urls
+                : post.screenshot_url
+                  ? [post.screenshot_url]
+                  : [];
+            if (images.length === 0) return null;
+            return (
+              <div
+                className={`mb-4 grid gap-2 ${
+                  images.length === 1 ? "grid-cols-1" : "grid-cols-2"
+                }`}
+              >
+                {images.map((src, i) => (
+                  <SafeThumb
+                    key={src + i}
+                    src={src}
+                    alt={`인증 스크린샷 ${i + 1}`}
+                    className="aspect-square w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
+                  />
+                ))}
+              </div>
+            );
+          })()}
+
+        {post.content && <RichContent content={post.content} />}
+
+        <div className="mt-6 flex items-center gap-3">
+          <LikeButton
+            postId={post.id}
+            userId={profile?.id ?? null}
+            initialLiked={liked}
+            initialCount={post.likes_count + (post.likes_boost ?? 0)}
+          />
+          <span className="text-sm text-[#93a0b8]">💬 {post.comments_count}</span>
+        </div>
+
+        <CommentsSection
+          parentType="community_post"
+          parentId={post.id}
+          path={`/community/${post.id}`}
           loggedIn={loggedIn}
-          allPosts={allRows.map(toCard)}
-          profitPosts={(profitRows ?? []).map(toCard)}
-          strategyPosts={strategyRows ? strategyRows.map(toCard) : null}
+          currentUserId={profile?.id ?? null}
+          comments={comments}
         />
-      </div>
-
+      </article>
       <BottomNav loggedIn={loggedIn} />
     </main>
+  );
+}
+
+function StatBox({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-3 text-center">
+      <div className="mb-0.5 text-[10px] text-[#5f6b82]">{label}</div>
+      <div
+        className={`text-sm font-bold ${
+          highlight ? "text-[#4ade80]" : "text-white"
+        }`}
+      >
+        {value}
+      </div>
+    </div>
   );
 }
