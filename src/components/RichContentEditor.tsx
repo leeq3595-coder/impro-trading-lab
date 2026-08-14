@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { uploadMediaFile } from "@/lib/uploadMedia";
 import { clientErrorMessage } from "@/lib/clientError";
-import { textToEditorHtml, SIZE_LABEL, type SizeKey } from "@/lib/richInline";
+import { textToEditorHtml, SIZE_LABEL, SIZE_PX, type SizeKey } from "@/lib/richInline";
 
 /**
  * 본문 에디터: 옛날 블로그처럼 갤러리에서 사진 선택 / 바로 촬영 / 붙여넣기(Ctrl+V) /
@@ -360,6 +360,12 @@ export function RichContentEditor({
         const frag = range.extractContents();
         const span = document.createElement("span");
         span.setAttribute("data-size", key);
+        // ⭐ 진짜 원인: data-size 속성만 달아놓고 실제 font-size 스타일을
+        // 빼먹어서, 편집창 안에서는 눈에 보이는 변화가 전혀 없었어요(저장되는
+        // 값 자체는 맞았어서 미리보기 화면에서는 정상으로 보였던 거예요).
+        // 굵게는 <b> 태그가 브라우저 기본 스타일(font-weight:bold)을 갖고
+        // 있어서 이 문제가 없었던 거고요.
+        span.style.fontSize = SIZE_PX[key];
         span.appendChild(frag);
         range.insertNode(span);
         const newRange = document.createRange();
