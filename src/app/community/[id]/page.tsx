@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/supabase/dal";
-import { getCommunityPostById } from "@/lib/publicData";
+import { getCommunityPostById, getAllLinkSettings } from "@/lib/publicData";
 import { excerptFromContent, toAbsoluteUrl, SITE_URL } from "@/lib/ogText";
 import { OgTags } from "@/components/OgTags";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
+import { ExchangeSignupBanner } from "@/components/ExchangeSignupBanner";
 import { LikeButton } from "@/components/LikeButton";
 import { PostOwnerActions } from "@/components/community/PostOwnerActions";
 import { CommentsSection, type CommentItem } from "@/components/CommentsSection";
@@ -94,9 +95,11 @@ export default async function CommunityDetailPage({
     );
   }
 
-  // 작성자 닉네임 / 좋아요 여부 / 댓글 목록은 서로 관계없는 요청이라
-  // 한꺼번에 보내요. 비로그인이면 좋아요 여부 조회는 건너뛰어요.
-  const [authorResult, likeResult, commentsResult] = await Promise.all([
+  // 작성자 닉네임 / 좋아요 여부 / 댓글 목록 / 거래소 가입 배너 링크는 서로
+  // 관계없는 요청이라 한꺼번에 보내요. 비로그인이면 좋아요 여부 조회는
+  // 건너뛰어요. 링크는 캐시된 공개 데이터라 대부분 DB를 다시 안 맞고 바로
+  // 나가요.
+  const [authorResult, likeResult, commentsResult, links] = await Promise.all([
     supabase
       .from("public_profiles")
       .select("nickname")
@@ -117,10 +120,17 @@ export default async function CommunityDetailPage({
       .eq("parent_type", "community_post")
       .eq("parent_id", id)
       .order("created_at", { ascending: true }),
+    getAllLinkSettings(),
   ]);
 
   let authorNickname = "회원";
   if (authorResult.data) authorNickname = authorResult.data.nickname;
+
+  // 커뮤니티(수익인증/매매법공유) 글 맨 끝에 항상 고정으로 붙는 거래소 가입
+  // 배너 — 링크는 홈 화면 1번 배너(banner1_signup)랑 같은 걸 써요. 관리자에서
+  // 그 링크 하나만 바꾸면 홈이랑 여기 둘 다 같이 바뀌어요.
+  const signupUrl =
+    links.find((l) => l.link_key === "banner1_signup")?.url || "/signup";
 
   const dateLabel = new Date(post.created_at)
     .toISOString()
@@ -215,18 +225,18 @@ export default async function CommunityDetailPage({
                   ? [post.screenshot_url]
                   : [];
             if (images.length === 0) return null;
+            // ⚠️ 예전엔 aspect-square + object-cover로 무조건 정사각형으로
+            // 잘라서 보여줬는데, 거래소 화면 캡처처럼 가로로 긴 스크린샷은
+            // 양옆이 심하게 잘려나가서 사진이 제대로 안 보였어요. 원본 비율
+            // 그대로(자르지 않고) 보여주도록 바꿨어요.
             return (
-              <div
-                className={`mb-4 grid gap-2 ${
-                  images.length === 1 ? "grid-cols-1" : "grid-cols-2"
-                }`}
-              >
+              <div className="mb-4 flex flex-col gap-2">
                 {images.map((src, i) => (
                   <SafeThumb
                     key={src + i}
                     src={src}
                     alt={`인증 스크린샷 ${i + 1}`}
-                    className="aspect-square w-full rounded-xl border border-[rgba(96,150,255,0.16)] object-cover"
+                    className="w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
                   />
                 ))}
               </div>
@@ -234,6 +244,8 @@ export default async function CommunityDetailPage({
           })()}
 
         {post.content && <RichContent content={post.content} />}
+
+        <ExchangeSignupBanner href={signupUrl} />
 
         <div className="mt-6 flex items-center gap-3">
           <LikeButton
