@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
 import { revalidatePublicData } from "@/lib/publicDataActions";
 import { MediaUploader } from "@/components/MediaUploader";
-import { ContentEditor } from "@/components/ContentEditor";
+import { RichContentEditor } from "@/components/RichContentEditor";
 
 // 이 화면에서 칼럼을 등록/수정/삭제/고정/공개전환하면 홈·칼럼 목록·칼럼
 // 상세 캐시를 그 자리에서 비워서, 새로고침 없이도 바로 반영되게 해요.
@@ -269,7 +269,7 @@ export default function ColumnsClient({ adminId }: { adminId: string }) {
                   }
                 />
               </div>
-              <ContentEditor
+              <RichContentEditor
                 value={form.content}
                 onChange={(v) => setForm((f) => ({ ...f, content: v }))}
                 placeholder="본문 내용"
