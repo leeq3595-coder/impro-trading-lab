@@ -73,6 +73,9 @@ export const getColumnById = unstable_cache(
   { revalidate: 300, tags: ["public-column-by-id"] }
 );
 
+// 자료마다 따로 VIP 여부를 나누던 방식은 없앴어요 — 자료실 게시판/상세는
+// 누구나(로그인한 회원이면) 다 보이고, PDF 등 첨부파일 다운로드만 예외
+// 없이 VIP 회원 전용이에요.
 export type PublicMaterial = {
   id: string;
   title: string;
@@ -81,24 +84,40 @@ export type PublicMaterial = {
   file_url: string | null;
   video_url: string | null;
   thumbnail_url: string | null;
-  is_vip: boolean;
+  detail_images: string[];
   is_pinned: boolean;
   created_at: string;
 };
+
+const MATERIAL_COLUMNS =
+  "id,title,category,description,file_url,video_url,thumbnail_url,detail_images,is_pinned,created_at";
 
 export const getMaterialsList = unstable_cache(
   async (): Promise<PublicMaterial[]> => {
     const { data } = await createPublicClient()
       .from("materials")
-      .select(
-        "id,title,category,description,file_url,video_url,thumbnail_url,is_vip,is_pinned,created_at"
-      )
+      .select(MATERIAL_COLUMNS)
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false });
     return data ?? [];
   },
   ["public-materials-list"],
   { revalidate: 300, tags: ["public-materials-list"] }
+);
+
+// 교재 게시글 상세(자료 하나 클릭했을 때). 목록/상세는 그대로 보여주고,
+// 실제 다운로드만 화면 쪽에서 VIP 확인을 해요.
+export const getMaterialById = unstable_cache(
+  async (id: string): Promise<PublicMaterial | null> => {
+    const { data } = await createPublicClient()
+      .from("materials")
+      .select(MATERIAL_COLUMNS)
+      .eq("id", id)
+      .maybeSingle();
+    return data ?? null;
+  },
+  ["public-material-by-id"],
+  { revalidate: 300, tags: ["public-material-by-id"] }
 );
 
 export type PublicCommunityPost = {
