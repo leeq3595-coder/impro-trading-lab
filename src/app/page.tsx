@@ -147,14 +147,18 @@ export default async function Home() {
         {/* 배너 캐러셀 */}
         <HomeBannerCarousel urls={bannerUrls} />
 
-        {/* 공지 */}
+        {/* 공지 — 누르면 공지 상세 페이지(/notices/[id])로 이동해요 */}
         {notice && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-[rgba(232,185,75,0.3)] bg-[rgba(232,185,75,0.06)] px-3 py-2.5 text-xs text-[#f3f5f9]">
+          <Link
+            href={`/notices/${notice.id}`}
+            className="mb-4 flex items-center gap-2 rounded-xl border border-[rgba(232,185,75,0.3)] bg-[rgba(232,185,75,0.06)] px-3 py-2.5 text-xs text-[#f3f5f9]"
+          >
             <span className="rounded-full bg-[rgba(232,185,75,0.2)] px-2 py-0.5 font-bold text-[#f6d888]">
               공지
             </span>
             <span className="truncate">{notice.title}</span>
-          </div>
+            <span className="ml-auto shrink-0 text-[#5f6b82]">›</span>
+          </Link>
         )}
 
         {/* 퀵메뉴 */}
