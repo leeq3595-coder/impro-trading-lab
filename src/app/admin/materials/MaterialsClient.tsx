@@ -6,9 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
 import { revalidatePublicData } from "@/lib/publicDataActions";
 import { MediaUploader } from "@/components/MediaUploader";
+import { MultiImageUploader } from "@/components/MultiImageUploader";
 import { SafeThumb } from "@/components/SafeThumb";
 
-const MATERIAL_CACHE_TAGS = ["public-materials-list"];
+const MATERIAL_CACHE_TAGS = ["public-materials-list", "public-material-by-id"];
 
 // 자료 첨부파일로 흔히 쓰는 형식들 (문서/압축파일 + 혹시 몰라 이미지·영상도 허용)
 const FILE_ACCEPT =
@@ -22,7 +23,7 @@ type MaterialRow = {
   file_url: string | null;
   video_url: string | null;
   thumbnail_url: string | null;
-  is_vip: boolean;
+  detail_images: string[] | null;
   is_pinned: boolean;
   created_at: string;
 };
@@ -34,7 +35,7 @@ const EMPTY_FORM = {
   file_url: "",
   video_url: "",
   thumbnail_url: "",
-  is_vip: false,
+  detail_images: [] as string[],
 };
 
 // 업로드된 파일 URL에서 원래 파일 이름(확장자 포함)만 뽑아서 보여줘요.
@@ -66,7 +67,7 @@ export default function MaterialsClient() {
       const { data, error } = await supabase
         .from("materials")
         .select(
-          "id,title,category,description,file_url,video_url,thumbnail_url,is_vip,is_pinned,created_at"
+          "id,title,category,description,file_url,video_url,thumbnail_url,detail_images,is_pinned,created_at"
         )
         .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
@@ -99,7 +100,7 @@ export default function MaterialsClient() {
       file_url: row.file_url ?? "",
       video_url: row.video_url ?? "",
       thumbnail_url: row.thumbnail_url ?? "",
-      is_vip: row.is_vip,
+      detail_images: row.detail_images ?? [],
     });
     setFormOpen(true);
   }
@@ -123,7 +124,7 @@ export default function MaterialsClient() {
         file_url: form.file_url.trim() || null,
         video_url: form.video_url.trim() || null,
         thumbnail_url: form.thumbnail_url.trim() || null,
-        is_vip: form.is_vip,
+        detail_images: form.detail_images,
       };
       if (editingId) {
         const { error } = await supabase
@@ -203,6 +204,7 @@ export default function MaterialsClient() {
         <p className="mb-6 text-xs text-[#5f6b82]">
           썸네일 이미지랑 첨부파일은 아래 업로드 버튼으로 바로 올리면 링크가
           자동으로 채워져요. 영상은 유튜브 등 외부 링크를 넣어주세요.
+          PDF 다운로드는 모든 자료가 VIP 회원만 가능해요.
         </p>
 
         {error && <p className="mb-4 text-sm text-[#f87171]">{error}</p>}
@@ -233,7 +235,7 @@ export default function MaterialsClient() {
 
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-semibold text-[#93a0b8]">
-                  썸네일 이미지 (선택 — 목록에 미리보기로 보여요)
+                  썸네일 이미지 (선택 — 1장, 목록에 미리보기로 보여요)
                 </span>
                 <div className="flex items-center gap-3">
                   {form.thumbnail_url && (
@@ -266,7 +268,23 @@ export default function MaterialsClient() {
 
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-semibold text-[#93a0b8]">
-                  첨부파일 (PDF·문서·압축파일 등 — 회원이 다운로드해요)
+                  상세페이지 추가 이미지 (선택 — 최대 5장, 게시글 상세에서만 보여요)
+                </span>
+                <MultiImageUploader
+                  value={form.detail_images}
+                  onChange={(urls) =>
+                    setForm((f) => ({ ...f, detail_images: urls }))
+                  }
+                  max={5}
+                  folder="materials/detail"
+                  label="상세 이미지 업로드"
+                  fieldName="detail_images"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-semibold text-[#93a0b8]">
+                  첨부파일 (PDF·문서·압축파일 등 — VIP 회원만 다운로드해요)
                 </span>
                 {form.file_url && (
                   <div className="flex items-center gap-2 rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2 text-xs text-[#93a0b8]">
@@ -298,34 +316,22 @@ export default function MaterialsClient() {
                 placeholder="영상 링크 URL (선택, 유튜브 등)"
                 className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-3 py-2.5 text-sm text-white placeholder:text-[#5f6b82] outline-none focus:border-[#3b82f6]"
               />
-              <div className="flex flex-wrap items-center gap-4">
-                <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
-                  카테고리
-                  <select
-                    value={form.category}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        category: e.target.value as MaterialRow["category"],
-                      }))
-                    }
-                    className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-2 py-1.5 text-sm text-white outline-none"
-                  >
-                    <option value="매매전략">매매전략</option>
-                    <option value="기술적분석">기술적분석</option>
-                  </select>
-                </label>
-                <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
-                  <input
-                    type="checkbox"
-                    checked={form.is_vip}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, is_vip: e.target.checked }))
-                    }
-                  />
-                  VIP 전용
-                </label>
-              </div>
+              <label className="flex items-center gap-2 text-xs text-[#93a0b8]">
+                카테고리
+                <select
+                  value={form.category}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      category: e.target.value as MaterialRow["category"],
+                    }))
+                  }
+                  className="rounded-lg border border-[rgba(96,150,255,0.18)] bg-[#101a30] px-2 py-1.5 text-sm text-white outline-none"
+                >
+                  <option value="매매전략">매매전략</option>
+                  <option value="기술적분석">기술적분석</option>
+                </select>
+              </label>
               <div className="mt-1 flex gap-2">
                 <button
                   onClick={submit}
@@ -377,9 +383,9 @@ export default function MaterialsClient() {
                 <span className="rounded-full bg-[rgba(96,150,255,0.14)] px-2 py-0.5 text-[10px] font-bold text-[#8fb3ff]">
                   {r.category}
                 </span>
-                {r.is_vip && (
-                  <span className="rounded-full bg-gradient-to-r from-[#f6d888] to-[#e8b94b] px-2 py-0.5 text-[10px] font-bold text-[#241a04]">
-                    VIP
+                {r.detail_images && r.detail_images.length > 0 && (
+                  <span className="rounded-full bg-[rgba(255,255,255,0.08)] px-2 py-0.5 text-[10px] font-bold text-[#93a0b8]">
+                    🖼️ 상세이미지 {r.detail_images.length}장
                   </span>
                 )}
               </div>
