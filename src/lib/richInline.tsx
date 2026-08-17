@@ -136,16 +136,64 @@ export function parseInlineTree(text: string): InlineNode[] {
   return stack[0].children;
 }
 
-function inlineTreeToReact(nodes: InlineNode[], keyPrefix: string): ReactNode[] {
+// 텍스트 안에 있는 http(s):// 링크를 찾아서 클릭 가능한 <a> 태그로 바꿔요.
+// (칼럼게시판 전용 기능 — autoLink=true일 때만 동작해요.) 링크 끝에 붙은
+// 문장부호(.,;:!?'")]} 등)는 URL이 아니라 문장 부호로 보고 링크에서 빼요.
+const URL_RE = /https?:\/\/[^\s<]+[^\s<.,;:!?'")\]}]/g;
+
+function linkifyText(text: string, keyPrefix: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let i = 0;
+  URL_RE.lastIndex = 0;
+  while ((match = URL_RE.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const url = match[0];
+    parts.push(
+      <a
+        key={`${keyPrefix}-url-${i++}`}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="break-all text-[#3b82f6] underline"
+      >
+        {url}
+      </a>
+    );
+    lastIndex = match.index + url.length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts;
+}
+
+function inlineTreeToReact(
+  nodes: InlineNode[],
+  keyPrefix: string,
+  autoLink = false
+): ReactNode[] {
   return nodes.map((node, i) => {
     const key = `${keyPrefix}-${i}`;
-    if (node.type === "text") return node.value;
+    if (node.type === "text") {
+      if (autoLink && node.value.includes("http")) {
+        return <span key={key}>{linkifyText(node.value, key)}</span>;
+      }
+      return node.value;
+    }
     if (node.type === "bold") {
-      return <strong key={key}>{inlineTreeToReact(node.children, key)}</strong>;
+      return (
+        <strong key={key}>
+          {inlineTreeToReact(node.children, key, autoLink)}
+        </strong>
+      );
     }
     return (
       <span key={key} style={{ fontSize: SIZE_PX[node.key] }}>
-        {inlineTreeToReact(node.children, key)}
+        {inlineTreeToReact(node.children, key, autoLink)}
       </span>
     );
   });
@@ -153,8 +201,14 @@ function inlineTreeToReact(nodes: InlineNode[], keyPrefix: string): ReactNode[] 
 
 // "**굵게**"/"[l]크게[/l]" 마커가 섞인 텍스트를 실제 화면에 보여줄 React
 // 엘리먼트로 바꿔요. (칼럼/글 상세 페이지 렌더링용)
-export function renderRichInline(text: string, keyPrefix: string): ReactNode[] {
-  return inlineTreeToReact(parseInlineTree(text), keyPrefix);
+// autoLink=true면 텍스트 안의 http(s):// 링크도 새 탭에서 열리는 클릭 가능한
+// 링크로 바꿔줘요 — 칼럼게시판에서만 켜서 써요.
+export function renderRichInline(
+  text: string,
+  keyPrefix: string,
+  autoLink = false
+): ReactNode[] {
+  return inlineTreeToReact(parseInlineTree(text), keyPrefix, autoLink);
 }
 
 function escapeHtml(s: string): string {
