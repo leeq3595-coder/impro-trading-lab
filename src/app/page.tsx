@@ -418,7 +418,7 @@ export default async function Home() {
                 className="flex items-center gap-3 rounded-2xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-4"
               >
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(59,130,246,0.15)] text-base">
-                  {m.is_vip ? "🔒" : "📄"}
+                  📄
                 </span>
                 <div className="min-w-0 flex-1">
                   {m.is_pinned && (
@@ -430,7 +430,7 @@ export default async function Home() {
                     {m.title}
                   </div>
                   <div className="mt-0.5 text-[11px] text-[#5f6b82]">
-                    {m.is_vip ? "VIP 전용" : "무료"} · {m.category}
+                    {m.category}
                   </div>
                 </div>
               </GatedLink>
