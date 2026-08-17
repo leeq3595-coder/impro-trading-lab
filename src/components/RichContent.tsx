@@ -107,8 +107,14 @@ function parseBlocks(content: string): Block[] {
 // "**굵게**"/"[l]크게[/l]" 표시를 <strong>/글씨크기 태그로 바꿔줘요.
 // (실제 파싱 로직은 편집기랑 같이 쓰는 src/lib/richInline.tsx에 있어요 —
 // 편집 화면에서 본 그대로 실제 페이지에도 나오게 하려고 로직을 공유해요.)
-function renderInline(text: string, keyPrefix: string): ReactNode[] {
-  return renderRichInline(text, keyPrefix);
+// autoLink는 칼럼게시판에서만 true로 켜서, 본문에 적힌 링크가 새 탭에서
+// 열리는 클릭 가능한 링크가 되게 해요. (커뮤니티는 계속 꺼져있어요.)
+function renderInline(
+  text: string,
+  keyPrefix: string,
+  autoLink?: boolean
+): ReactNode[] {
+  return renderRichInline(text, keyPrefix, autoLink);
 }
 
 type Theme = "dark" | "light";
@@ -158,10 +164,12 @@ export function RichContent({
   content,
   theme = "dark",
   communityUrl,
+  autoLink = false,
 }: {
   content: string;
   theme?: Theme;
   communityUrl?: string;
+  autoLink?: boolean;
 }) {
   const blocks = parseBlocks(content);
   const c = THEME_CLASSES[theme];
@@ -226,7 +234,7 @@ export function RichContent({
               key={i}
               className={`${sizeClass} font-bold leading-snug ${c.heading}`}
             >
-              {renderInline(b.text, `h${i}`)}
+              {renderInline(b.text, `h${i}`, autoLink)}
             </HeadingTag>
           );
         }
@@ -239,7 +247,7 @@ export function RichContent({
               <p
                 className={`whitespace-pre-wrap text-sm italic leading-relaxed ${c.quoteText}`}
               >
-                {renderInline(b.text, `q${i}`)}
+                {renderInline(b.text, `q${i}`, autoLink)}
               </p>
             </blockquote>
           );
@@ -253,7 +261,7 @@ export function RichContent({
               <p
                 className={`whitespace-pre-wrap text-sm font-semibold leading-relaxed ${c.calloutText}`}
               >
-                {renderInline(b.text, `c${i}`)}
+                {renderInline(b.text, `c${i}`, autoLink)}
               </p>
             </div>
           );
@@ -263,7 +271,7 @@ export function RichContent({
             key={i}
             className={`whitespace-pre-wrap text-sm leading-relaxed ${c.text}`}
           >
-            {renderInline(b.text, `t${i}`)}
+            {renderInline(b.text, `t${i}`, autoLink)}
           </p>
         );
       })}
