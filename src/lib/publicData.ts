@@ -179,3 +179,24 @@ export const getPinnedNotice = unstable_cache(
   ["public-pinned-notice"],
   { revalidate: 120, tags: ["public-pinned-notice"] }
 );
+
+export type PublicNotice = {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+};
+
+// 홈 화면 공지 배너를 눌렀을 때 이동하는 공지 상세 페이지용 조회예요.
+export const getNoticeById = unstable_cache(
+  async (id: string): Promise<PublicNotice | null> => {
+    const { data } = await createPublicClient()
+      .from("notices")
+      .select("id,title,content,created_at")
+      .eq("id", id)
+      .maybeSingle();
+    return data ?? null;
+  },
+  ["public-notice-by-id"],
+  { revalidate: 120, tags: ["public-notice-by-id"] }
+);
