@@ -49,7 +49,7 @@ function fileNameFromUrl(url: string) {
   }
 }
 
-export default function MaterialsClient() {
+export default function MaterialsClient({ adminId }: { adminId: string }) {
   const supabase = createClient();
   const [rows, setRows] = useState<MaterialRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,7 +133,9 @@ export default function MaterialsClient() {
           .eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("materials").insert(payload);
+        const { error } = await supabase
+          .from("materials")
+          .insert({ ...payload, author_id: adminId });
         if (error) throw error;
       }
       setFormOpen(false);
