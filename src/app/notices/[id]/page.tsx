@@ -59,7 +59,7 @@ export default async function NoticeDetailPage({
           {notice.title}
         </h1>
         <div className="mb-4 text-xs text-[#5f6b82]">{dateLabel}</div>
-        <RichContent content={notice.content} />
+        <RichContent content={notice.content} autoLink />
       </article>
       <BottomNav loggedIn={loggedIn} />
     </main>
