@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { clientErrorMessage } from "@/lib/clientError";
 import { revalidatePublicData } from "@/lib/publicDataActions";
 
-const NOTICE_CACHE_TAGS = ["public-pinned-notice"];
+const NOTICE_CACHE_TAGS = ["public-pinned-notice", "public-notice-by-id"];
 
 type NoticeRow = {
   id: string;
