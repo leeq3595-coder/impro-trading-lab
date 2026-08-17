@@ -194,6 +194,7 @@ export default async function ColumnDetailPage({
             content={column.content}
             theme="light"
             communityUrl={communityUrl}
+            autoLink
           />
         </article>
 
@@ -252,7 +253,7 @@ export default async function ColumnDetailPage({
           src={column.cover_image_url}
           className="mb-4 w-full rounded-xl border border-[rgba(96,150,255,0.16)]"
         />
-        <RichContent content={column.content} />
+        <RichContent content={column.content} autoLink />
       </article>
       <BottomNav loggedIn={loggedIn} />
     </main>
