@@ -4,7 +4,7 @@ import { getMaterialsList } from "@/lib/publicData";
 import { BottomNav } from "@/components/BottomNav";
 import { AutoGate } from "@/components/AutoGate";
 import { SafeThumb } from "@/components/SafeThumb";
-import { DownloadButton } from "@/components/DownloadButton";
+import { MaterialDownloadButton } from "@/components/MaterialDownloadButton";
 
 function fileNameFromUrl(url: string, fallback: string) {
   try {
@@ -72,71 +72,65 @@ export default async function MaterialsPage() {
             </div>
           )}
           {(materials ?? []).map((m) => {
-            const canAccess = !m.is_vip || profile?.is_vip;
+            const userIsVip = !!profile?.is_vip;
             return (
               <div
                 key={m.id}
-                className={`flex items-center gap-3 rounded-2xl border p-4 ${
-                  canAccess
-                    ? "border-[rgba(96,150,255,0.16)] bg-[#0b1120]"
-                    : "border-[rgba(232,185,75,0.3)] bg-[rgba(232,185,75,0.05)]"
-                }`}
+                className="flex items-center gap-3 rounded-2xl border border-[rgba(96,150,255,0.16)] bg-[#0b1120] p-4"
               >
-                {m.thumbnail_url ? (
-                  <SafeThumb
-                    src={m.thumbnail_url}
-                    className="h-11 w-11 shrink-0 rounded-xl object-cover"
-                  />
-                ) : (
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(59,130,246,0.15)] text-base">
-                    {m.is_vip ? "🔒" : "📄"}
-                  </span>
-                )}
-                <div className="min-w-0 flex-1">
-                  {m.is_pinned && (
-                    <span className="mb-0.5 mr-1 inline-block rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
-                      📌 고정
+                <Link
+                  href={`/materials/${m.id}`}
+                  className="flex min-w-0 flex-1 items-center gap-3"
+                >
+                  {m.thumbnail_url ? (
+                    <SafeThumb
+                      src={m.thumbnail_url}
+                      className="h-11 w-11 shrink-0 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(59,130,246,0.15)] text-base">
+                      📄
                     </span>
                   )}
-                  <div className="truncate text-sm font-bold text-white">
-                    {m.title}
-                  </div>
-                  {m.description && (
-                    <div className="mt-0.5 truncate text-[11px] text-[#93a0b8]">
-                      {m.description}
+                  <div className="min-w-0 flex-1">
+                    {m.is_pinned && (
+                      <span className="mb-0.5 mr-1 inline-block rounded-full bg-[rgba(248,113,113,0.16)] px-2 py-0.5 text-[10px] font-bold text-[#f87171]">
+                        📌 고정
+                      </span>
+                    )}
+                    <div className="truncate text-sm font-bold text-white">
+                      {m.title}
                     </div>
+                    {m.description && (
+                      <div className="mt-0.5 truncate text-[11px] text-[#93a0b8]">
+                        {m.description}
+                      </div>
+                    )}
+                    <div className="mt-1 text-[11px] text-[#5f6b82]">
+                      {m.category}
+                    </div>
+                  </div>
+                </Link>
+                <div className="flex shrink-0 flex-col items-end gap-1.5">
+                  {m.file_url && (
+                    <MaterialDownloadButton
+                      url={m.file_url}
+                      filename={fileNameFromUrl(m.file_url, m.title)}
+                      userIsVip={userIsVip}
+                      className="rounded-lg bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-3 py-1.5 text-xs font-bold text-[#04101f] disabled:opacity-60"
+                    />
                   )}
-                  <div className="mt-1 text-[11px] text-[#5f6b82]">
-                    {m.is_vip ? "VIP 전용" : "무료"} · {m.category}
-                  </div>
+                  {m.video_url && (
+                    <a
+                      href={m.video_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8]"
+                    >
+                      ▶️ 영상 보기
+                    </a>
+                  )}
                 </div>
-                {!canAccess ? (
-                  <span className="shrink-0 text-[10px] font-bold text-[#f6d888]">
-                    VIP전환필요
-                  </span>
-                ) : (
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    {m.file_url && (
-                      <DownloadButton
-                        url={m.file_url}
-                        filename={fileNameFromUrl(m.file_url, m.title)}
-                        className="rounded-lg bg-gradient-to-r from-[#38bdf8] to-[#3b82f6] px-3 py-1.5 text-xs font-bold text-[#04101f] disabled:opacity-60"
-                      >
-                        ⬇️ 다운로드
-                      </DownloadButton>
-                    )}
-                    {m.video_url && (
-                      <a
-                        href={m.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-lg border border-[rgba(96,150,255,0.3)] px-3 py-1.5 text-xs font-semibold text-[#93a0b8]"
-                      >
-                        ▶️ 영상 보기
-                      </a>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
