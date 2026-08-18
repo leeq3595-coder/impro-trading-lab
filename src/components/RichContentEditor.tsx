@@ -241,11 +241,42 @@ export function RichContentEditor({
     e.target.value = "";
   }
 
+  // "[[banner]]" 토큰은 한 글자도 안 틀려야 실제 배너로 바뀌는데,
+  // execCommand("insertText", ...)에 "\n"이 섞인 문자열을 통째로 넘기면
+  // 브라우저마다(특히 모바일) 줄바꿈을 처리하는 방식이 달라서 눈에 안
+  // 보이는 문자가 섞여 들어가는 경우가 있었어요. 그래서 이 버튼만 굵게/
+  // 글씨크기 버튼처럼 직접 DOM에 텍스트 노드 + <br>을 만들어 넣는 방식으로
+  // 바꿔서, 항상 정확히 "[[banner]]" 글자만 들어가게 했어요.
   function handleInsertBanner() {
-    const editor = editorRef.current;
-    const needsLeadingBreak =
-      !!editor && editor.textContent && editor.textContent.length > 0;
-    insertTextAtCursor(`${needsLeadingBreak ? "\n" : ""}[[banner]]\n`);
+    try {
+      restoreSelection();
+      const sel = window.getSelection();
+      const editor = editorRef.current;
+      if (!sel || sel.rangeCount === 0 || !editor) return;
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+
+      const hasContentBefore = !!editor.textContent && editor.textContent.length > 0;
+
+      const frag = document.createDocumentFragment();
+      if (hasContentBefore) frag.appendChild(document.createElement("br"));
+      frag.appendChild(document.createTextNode("[[banner]]"));
+      const trailingBreak = document.createElement("br");
+      frag.appendChild(trailingBreak);
+
+      range.insertNode(frag);
+      const newRange = document.createRange();
+      newRange.setStartAfter(trailingBreak);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+
+      syncFromDom();
+    } catch (err) {
+      setError(
+        `배너 삽입 중 문제가 생겼어요: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
   }
 
   // 선택 범위 안의 텍스트가 전부 이미 굵게(<b>/<strong>) 처리돼 있는지 봐요.

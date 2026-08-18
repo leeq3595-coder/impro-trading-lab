@@ -16,6 +16,13 @@ const QUOTE_PREFIX = /^>\s?/;
 const HEADING_RE = /^(#{1,3})\s+(.+)$/;
 // "[[banner]]" 한 줄만 있으면 소통방 홍보 배너로 바뀌어요.
 const MIDBANNER_TOKEN = "[[banner]]";
+// contentEditable 편집기에서 붙는 보이지 않는 문자(zero-width space,
+// non-breaking space 등)나 공백 차이 때문에 정확히 "[[banner]]"랑 글자가
+// 안 맞아서 배너로 안 바뀌고 글자 그대로 보이는 경우가 있었어요 — 그런
+// 보이지 않는 문자를 다 걷어내고 비교해서 좀 더 너그럽게 인식해요.
+function normalizeForTokenMatch(s: string): string {
+  return s.replace(/[​-‍﻿ \s]/g, "").toLowerCase();
+}
 
 type Block =
   | { type: "text"; text: string }
@@ -70,7 +77,7 @@ function parseBlocks(content: string): Block[] {
     }
     flushQuote();
 
-    if (line === MIDBANNER_TOKEN) {
+    if (line === MIDBANNER_TOKEN || normalizeForTokenMatch(line) === MIDBANNER_TOKEN) {
       flushText();
       blocks.push({ type: "midbanner" });
       continue;
