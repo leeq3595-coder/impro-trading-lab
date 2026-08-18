@@ -21,7 +21,12 @@ const MIDBANNER_TOKEN = "[[banner]]";
 // 안 맞아서 배너로 안 바뀌고 글자 그대로 보이는 경우가 있었어요 — 그런
 // 보이지 않는 문자를 다 걷어내고 비교해서 좀 더 너그럽게 인식해요.
 function normalizeForTokenMatch(s: string): string {
-  return s.replace(/[​-‍﻿ \s]/g, "").toLowerCase();
+  return s
+    .replace(/[\u200B-\u200D\uFEFF\u00A0\s]/g, "")
+    // 굵게 마크다운 마커(굵게/사이즈)도 지워야 해요 — 관리자가 전체 문단을 드래그해서
+    // 굵게 누르면 [[banner]] 줄도 같이 **[[banner]]**로 감싸서 저장될 수 있어서, 그런 경우도 배너로 인식하게 해요.
+    .replace(/\*\*|\[\/?(?:s|l|xl)\]/gi, "")
+    .toLowerCase();
 }
 
 type Block =
